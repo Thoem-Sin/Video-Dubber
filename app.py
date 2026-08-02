@@ -459,11 +459,10 @@ def get_version_history():
     except Exception:
         pass
 
-    # 3. Ensure current version is always present
-    curr_v = get_app_version()
-    existing_vers = {r["version"] for r in releases}
-    if curr_v and curr_v not in existing_vers:
-        releases.append({"tag": f"v{curr_v}", "version": curr_v, "notes": ""})
+    # Ensure every release entry has non-empty notes
+    for rel in releases:
+        if not rel.get("notes"):
+            rel["notes"] = FALLBACK_VERSION_NOTES.get(rel["version"], "- Performance enhancements and stability updates.")
 
     # Sort descending by version tuple
     releases.sort(key=lambda x: _parse_version_tuple(x["version"]), reverse=True)
