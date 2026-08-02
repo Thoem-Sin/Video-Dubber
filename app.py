@@ -152,6 +152,35 @@ def _parse_version_tuple(v_str):
     except Exception:
         return (0,)
 
+FALLBACK_VERSION_NOTES = {
+    "1.2.3": (
+        "- In-App Auto-Updater with direct ZIP download fallback\n"
+        "- Launch auto-detect and auto-popup update modal on startup\n"
+        "- Studio Preferences Version & Downgrade Manager\n"
+        "- Dark glass confirmation dialogs for version switching\n"
+        "- Complete Version Release History with per-version changelog"
+    ),
+    "1.2.2": (
+        "- Fixed toast alert stuck on hover — popdown resumes on mouseleave\n"
+        "- Positioned alert toasts below top navigation bar\n"
+        "- Smooth 60fps animations with 2-second auto-dismiss\n"
+        "- Filtered routine update checks from Notification Bell dropdown"
+    ),
+    "1.2.1": (
+        "- Single-line subtitle rendering for captions\n"
+        "- Online version update checker with release notes\n"
+        "- Improved batch processing performance\n"
+        "- Fixed Khmer font rendering edge cases"
+    ),
+    "1.2.0": (
+        "- Initial PRO release of AutoVideoDubber Studio\n"
+        "- Multi-engine AI dubbing (Gemini, Groq, DeepSeek, OpenRouter)\n"
+        "- RVC Voice Cloning & Edge-TTS integration\n"
+        "- Hardcoded caption detection & subtitle burning"
+    )
+}
+
+
 @app.route("/api/check_update", methods=["GET"])
 def check_update():
     """Check for updates across GitHub Releases, Tags, and raw version.txt."""
@@ -165,7 +194,6 @@ def check_update():
     curr_ver = get_app_version()
     found_versions = []
     html_url = f"https://github.com/{GITHUB_REPO}/releases"
-    notes = ""
 
     def fetch(url, headers=None):
         req = urllib.request.Request(url, headers=headers or {"User-Agent": "VideoDubberStudio/1.2"})
@@ -186,7 +214,8 @@ def check_update():
             tag = rel.get("tag_name", "").strip().lstrip("v")
             body = (rel.get("body") or "").strip()
             if tag:
-                releases_notes_map[tag] = body
+                if body:
+                    releases_notes_map[tag] = body
                 found_versions.append(tag)
     except Exception:
         pass
@@ -224,8 +253,18 @@ def check_update():
     if found_versions:
         highest_tag = max(found_versions, key=_parse_version_tuple)
 
-    # Get release notes for the latest version from GitHub Releases API
+    # Get release notes for the latest version from GitHub Releases API -> raw RELEASE_NOTES.txt -> fallback dict
     notes = releases_notes_map.get(highest_tag, "")
+    if not notes:
+        try:
+            raw_notes_url = f"https://raw.githubusercontent.com/{GITHUB_REPO}/{GITHUB_BRANCH}/RELEASE_NOTES.txt"
+            req = urllib.request.Request(raw_notes_url, headers={"User-Agent": "VideoDubberStudio/1.2"})
+            with urllib.request.urlopen(req, timeout=5) as r:
+                notes = r.read().decode("utf-8").strip()
+        except Exception:
+            pass
+    if not notes:
+        notes = FALLBACK_VERSION_NOTES.get(highest_tag, FALLBACK_VERSION_NOTES.get("1.2.3", ""))
 
     curr_tuple = _parse_version_tuple(curr_ver)
     latest_tuple = _parse_version_tuple(highest_tag)
