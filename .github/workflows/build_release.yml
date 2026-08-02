@@ -1,0 +1,65 @@
+name: Build & Publish Windows Online Release
+
+on:
+  push:
+    branches:
+      - main
+      - master
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+jobs:
+  build-windows:
+    name: Build Windows Application
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      - name: Setup .NET 8 SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Build C# Render CLI
+        run: |
+          dotnet publish VideoDubberRenderCLI/VideoDubberRenderCLI.csproj -c Release -o ./bin/cli
+
+      - name: Setup Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-python-version: '3.11'
+
+      - name: Install Python Dependencies & PyInstaller
+        run: |
+          python -m pip install --upgrade pip
+          pip install pyinstaller pywebview torch edge-tts deep-translator openai-whisper pillow numpy requests
+
+      - name: Build Windows Executable
+        run: |
+          pyinstaller --clean video_dubber.spec
+
+      - name: Zip Built Release
+        shell: powershell
+        run: |
+          Compress-Archive -Path dist/VideoDubberStudio/* -DestinationPath VideoDubberStudio_Windows.zip
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: VideoDubberStudio_Windows
+          path: VideoDubberStudio_Windows.zip
+
+      - name: Create GitHub Release & Upload Online Update
+        uses: softprops/action-gh-release@v2
+        if: startsWith(github.ref, 'refs/tags/') || github.ref == 'refs/heads/main'
+        with:
+          tag_name: ${{ github.ref_name == 'main' && 'latest' || github.ref_name }}
+          name: Release ${{ github.ref_name }}
+          draft: false
+          prerelease: false
+          files: VideoDubberStudio_Windows.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
