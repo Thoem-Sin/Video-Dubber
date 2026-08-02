@@ -68,6 +68,17 @@ function clearNotifications(event) {
 
 function addNotification(message, type = 'info') {
     if (!message) return;
+
+    // Filter out useless/transient routine messages from cluttering the notification bar
+    const lowerStr = message.toLowerCase();
+    if (
+        lowerStr.includes('checking for update') ||
+        lowerStr.includes('running the latest version') ||
+        lowerStr.includes('up to date')
+    ) {
+        return;
+    }
+
     const now = new Date();
     const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     notificationHistory.unshift({ message, type, time: timeStr });
@@ -83,6 +94,7 @@ function addNotification(message, type = 'info') {
 
     renderNotificationList();
 }
+
 
 function renderNotificationList() {
     const list = document.getElementById('notificationList');
