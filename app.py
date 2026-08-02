@@ -114,7 +114,50 @@ def get_gpu_status():
         "ffmpeg_encoder": caps["ffmpeg_encoder"]
     })
 
+APP_VERSION = "1.0.0"
+GITHUB_REPO = "Thoem-Sin/Video-Dubber"
+
+@app.route("/api/check_update", methods=["GET"])
+def check_update():
+    """Check GitHub Releases for latest published application update."""
+    try:
+        url = f"https://api.github.com/repos/{GITHUB_REPO}/releases/latest"
+        req = urllib.request.Request(
+            url,
+            headers={"User-Agent": "VideoDubberStudio-App"}
+        )
+        with urllib.request.urlopen(req, timeout=4) as resp:
+            data = json.loads(resp.read().decode("utf-8"))
+            latest_tag = data.get("tag_name", "").lstrip("v").strip()
+            html_url = data.get("html_url", f"https://github.com/{GITHUB_REPO}/releases")
+            notes = data.get("body", "")
+            
+            update_available = False
+            if latest_tag:
+                curr_parts = [int(p) for p in APP_VERSION.split(".") if p.isdigit()]
+                latest_parts = [int(p) for p in latest_tag.split(".") if p.isdigit()]
+                update_available = latest_parts > curr_parts
+
+            return jsonify({
+                "status": "ok",
+                "current_version": APP_VERSION,
+                "latest_version": latest_tag or APP_VERSION,
+                "update_available": update_available,
+                "download_url": html_url,
+                "release_notes": notes
+            })
+    except Exception as ex:
+        return jsonify({
+            "status": "error",
+            "current_version": APP_VERSION,
+            "latest_version": APP_VERSION,
+            "update_available": False,
+            "download_url": f"https://github.com/{GITHUB_REPO}/releases",
+            "message": str(ex)
+        })
+
 JOBS = {}
+
 
 
 class JobTracker:
