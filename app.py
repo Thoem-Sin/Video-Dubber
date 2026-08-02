@@ -152,35 +152,6 @@ def _parse_version_tuple(v_str):
     except Exception:
         return (0,)
 
-FALLBACK_VERSION_NOTES = {
-    "1.2.3": (
-        "- In-App Auto-Updater with direct ZIP download fallback\n"
-        "- Launch auto-detect and auto-popup update modal on startup\n"
-        "- Studio Preferences Version & Downgrade Manager\n"
-        "- Dark glass confirmation dialogs for version switching\n"
-        "- Complete Version Release History with per-version changelog"
-    ),
-    "1.2.2": (
-        "- Fixed toast alert stuck on hover — popdown resumes on mouseleave\n"
-        "- Positioned alert toasts below top navigation bar\n"
-        "- Smooth 60fps animations with 2-second auto-dismiss\n"
-        "- Filtered routine update checks from Notification Bell dropdown"
-    ),
-    "1.2.1": (
-        "- Single-line subtitle rendering for captions\n"
-        "- Online version update checker with release notes\n"
-        "- Improved batch processing performance\n"
-        "- Fixed Khmer font rendering edge cases"
-    ),
-    "1.2.0": (
-        "- Initial PRO release of AutoVideoDubber Studio\n"
-        "- Multi-engine AI dubbing (Gemini, Groq, DeepSeek, OpenRouter)\n"
-        "- RVC Voice Cloning & Edge-TTS integration\n"
-        "- Hardcoded caption detection & subtitle burning"
-    )
-}
-
-
 @app.route("/api/check_update", methods=["GET"])
 def check_update():
     """Check for updates across GitHub Releases, Tags, and raw version.txt."""
@@ -214,8 +185,7 @@ def check_update():
             tag = rel.get("tag_name", "").strip().lstrip("v")
             body = (rel.get("body") or "").strip()
             if tag:
-                if body:
-                    releases_notes_map[tag] = body
+                releases_notes_map[tag] = body
                 found_versions.append(tag)
     except Exception:
         pass
@@ -253,18 +223,8 @@ def check_update():
     if found_versions:
         highest_tag = max(found_versions, key=_parse_version_tuple)
 
-    # Get release notes for the latest version from GitHub Releases API -> raw RELEASE_NOTES.txt -> fallback dict
+    # Get release notes directly from GitHub Releases API
     notes = releases_notes_map.get(highest_tag, "")
-    if not notes:
-        try:
-            raw_notes_url = f"https://raw.githubusercontent.com/{GITHUB_REPO}/{GITHUB_BRANCH}/RELEASE_NOTES.txt"
-            req = urllib.request.Request(raw_notes_url, headers={"User-Agent": "VideoDubberStudio/1.2"})
-            with urllib.request.urlopen(req, timeout=5) as r:
-                notes = r.read().decode("utf-8").strip()
-        except Exception:
-            pass
-    if not notes:
-        notes = FALLBACK_VERSION_NOTES.get(highest_tag, FALLBACK_VERSION_NOTES.get("1.2.3", ""))
 
     curr_tuple = _parse_version_tuple(curr_ver)
     latest_tuple = _parse_version_tuple(highest_tag)
@@ -459,23 +419,15 @@ def get_version_history():
     except Exception:
         pass
 
-    # 3. Ensure current version and fallback entries are included
+    # 3. Ensure current version is included if missing
     curr_v = get_app_version()
-    known_versions = [curr_v, "1.2.3", "1.2.2", "1.2.1", "1.2.0"]
     existing_vers = {r["version"] for r in releases}
-    for kv in known_versions:
-        if kv and kv not in existing_vers:
-            releases.append({
-                "tag": f"v{kv}",
-                "version": kv,
-                "notes": FALLBACK_VERSION_NOTES.get(kv, "- Performance enhancements and stability updates.")
-            })
-            existing_vers.add(kv)
-
-    # Ensure every release entry has non-empty notes
-    for rel in releases:
-        if not rel.get("notes"):
-            rel["notes"] = FALLBACK_VERSION_NOTES.get(rel["version"], "- Performance enhancements and stability updates.")
+    if curr_v and curr_v not in existing_vers:
+        releases.append({
+            "tag": f"v{curr_v}",
+            "version": curr_v,
+            "notes": releases_map.get(curr_v, "")
+        })
 
     # Sort descending by version tuple
     releases.sort(key=lambda x: _parse_version_tuple(x["version"]), reverse=True)

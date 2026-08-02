@@ -1,5 +1,0 @@
-- In-App Auto-Updater with direct ZIP download fallback
-- Launch auto-detect and auto-popup update modal on startup
-- Studio Preferences Version & Downgrade Manager
-- Dark glass confirmation dialogs for version switching
-- Complete Version Release History with per-version changelog

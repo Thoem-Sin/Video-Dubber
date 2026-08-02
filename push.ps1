@@ -8,13 +8,8 @@ Write-Host ""
 
 $tag = Read-Host "Enter new version tag (e.g. v1.2.2 or press ENTER to skip tag)"
 
-# Read multi-line Release Notes from RELEASE_NOTES.txt if available
-if (Test-Path "RELEASE_NOTES.txt") {
-    $notes = Get-Content "RELEASE_NOTES.txt" -Raw
-    Write-Host "[INFO] Loaded Release Notes from RELEASE_NOTES.txt" -ForegroundColor Green
-} else {
-    $notes = Read-Host "Enter short Release Notes summary"
-}
+# Prompt for Release Notes summary
+$notes = Read-Host "Enter short Release Notes summary (or press ENTER for default)"
 
 if ([string]::IsNullOrWhiteSpace($notes)) {
     $notes = "Performance enhancements and bug fixes"

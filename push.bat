@@ -9,13 +9,7 @@ echo.
 
 set /p TAG="Enter new version tag (e.g. v1.2.2 or press ENTER to skip tag): "
 
-if exist RELEASE_NOTES.txt (
-    echo [INFO] Loaded Release Notes from RELEASE_NOTES.txt
-    set /p NOTES=<RELEASE_NOTES.txt
-) else (
-    set /p NOTES="Enter Release Notes description: "
-)
-
+set /p NOTES="Enter Release Notes description: "
 if "%NOTES%"=="" set NOTES=Performance enhancements and bug fixes
 
 echo.
@@ -33,7 +27,7 @@ git push origin main
 if not "%TAG%"=="" (
     echo.
     echo [4/4] Creating version tag %TAG% for GitHub Release Notes...
-    git tag -a %TAG% -F RELEASE_NOTES.txt
+    git tag -a %TAG% -m "%NOTES%"
     git push origin %TAG%
 )
 
