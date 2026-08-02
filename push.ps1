@@ -7,11 +7,16 @@ Write-Host "========================================================" -Foregroun
 Write-Host ""
 
 $tag = Read-Host "Enter new version tag (e.g. v1.2.2 or press ENTER to skip tag)"
-$notes = Read-Host "Enter Release Notes description"
+$notes = Read-Host "Enter short Release Notes summary"
+
+# Sanitize input strings to single line
+if ($tag) { $tag = ($tag -replace '[\r\n]', '').Trim() }
+if ($notes) { $notes = ($notes -replace '[\r\n]', ' ').Trim() }
 
 if ([string]::IsNullOrWhiteSpace($notes)) {
     $notes = "Performance enhancements and bug fixes"
 }
+
 
 Write-Host "`n[1/4] Staging modified files..." -ForegroundColor Yellow
 git add .
