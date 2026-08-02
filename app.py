@@ -459,6 +459,19 @@ def get_version_history():
     except Exception:
         pass
 
+    # 3. Ensure current version and fallback entries are included
+    curr_v = get_app_version()
+    known_versions = [curr_v, "1.2.3", "1.2.2", "1.2.1", "1.2.0"]
+    existing_vers = {r["version"] for r in releases}
+    for kv in known_versions:
+        if kv and kv not in existing_vers:
+            releases.append({
+                "tag": f"v{kv}",
+                "version": kv,
+                "notes": FALLBACK_VERSION_NOTES.get(kv, "- Performance enhancements and stability updates.")
+            })
+            existing_vers.add(kv)
+
     # Ensure every release entry has non-empty notes
     for rel in releases:
         if not rel.get("notes"):
