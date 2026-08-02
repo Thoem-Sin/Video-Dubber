@@ -652,6 +652,21 @@
             </div>
         </div>
 
+        <!-- ─── Switch / Downgrade Version Confirmation Modal ────────── -->
+        <div class="ipd-backdrop hidden" id="switchConfirmBackdrop" style="z-index: 10001;">
+            <div class="ipd-card" style="width: 360px;">
+                <div class="ipd-icon-wrap processing" style="background: rgba(99, 102, 241, 0.15);">
+                    <i class="fa-solid fa-arrow-down-short-wide ipd-icon" style="color: #818cf8;"></i>
+                </div>
+                <h3 class="ipd-title">Switch / Downgrade Version?</h3>
+                <p class="ipd-sub">Are you sure you want to install <strong id="switchTargetVerLabel" style="color: #818cf8;">v1.2.0</strong>? The app build will be switched and require a restart.</p>
+                <div class="ipd-actions">
+                    <button type="button" class="ipd-btn ipd-btn-later" onclick="closeSwitchConfirmModal()">Cancel</button>
+                    <button type="button" class="ipd-btn ipd-btn-restart" onclick="confirmAndExecuteVersionSwitch()"><i class="fa-solid fa-check"></i> Confirm &amp; Switch</button>
+                </div>
+            </div>
+        </div>
+
         <main class="main-content">
             <!-- Hidden file input used for JS-triggered file picking -->
             <input type="file" id="videoFileInput" accept="video/*" class="file-input" style="display:none;">
@@ -2205,14 +2220,28 @@
                 });
         }
 
+        let _pendingSwitchVersion = null;
+
         function performVersionSwitch() {
             const selectEl = document.getElementById('downgradeVersionSelect');
             if (!selectEl || !selectEl.value) return;
 
-            const targetVer = selectEl.value;
-            const confirmMsg = `Are you sure you want to switch / downgrade to version v${targetVer}? The app will install this release and prompt for restart.`;
+            _pendingSwitchVersion = selectEl.value;
+            const targetLabel = document.getElementById('switchTargetVerLabel');
+            if (targetLabel) targetLabel.textContent = 'v' + _pendingSwitchVersion;
 
-            if (!confirm(confirmMsg)) return;
+            document.getElementById('switchConfirmBackdrop').classList.remove('hidden');
+        }
+
+        function closeSwitchConfirmModal() {
+            document.getElementById('switchConfirmBackdrop').classList.add('hidden');
+            _pendingSwitchVersion = null;
+        }
+
+        function confirmAndExecuteVersionSwitch() {
+            if (!_pendingSwitchVersion) return;
+            const targetVer = _pendingSwitchVersion;
+            closeSwitchConfirmModal();
 
             // Close Preferences modal and show install progress modal
             closePreferencesModal();
