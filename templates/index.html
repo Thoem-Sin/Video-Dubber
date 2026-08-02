@@ -143,71 +143,71 @@
             50% { box-shadow: 0 0 14px 5px rgba(139,92,246,1); }
         }
         .update-modal-card {
-            max-width: 440px;
+            max-width: 400px;
             width: 94%;
             padding: 0;
-            border-radius: 22px;
+            border-radius: 18px;
             overflow: hidden;
-            background: rgba(17, 24, 39, 0.95);
+            background: rgba(17, 24, 39, 0.96);
             border: 1px solid rgba(255, 255, 255, 0.08);
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6);
-            animation: updateModalIn 0.28s cubic-bezier(0.34, 1.56, 0.64, 1);
+            box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.6);
+            animation: updateModalIn 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
         }
         @keyframes updateModalIn {
-            from { opacity: 0; transform: scale(0.9) translateY(18px); }
+            from { opacity: 0; transform: scale(0.9) translateY(14px); }
             to   { opacity: 1; transform: scale(1) translateY(0); }
         }
         .update-modal-header {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 20px 22px 16px;
+            padding: 14px 18px 12px;
             border-bottom: 1px solid rgba(255, 255, 255, 0.06);
         }
         .update-header-left {
             display: flex;
             align-items: center;
-            gap: 14px;
+            gap: 12px;
         }
         .update-modal-icon-box {
             position: relative;
-            width: 44px;
-            height: 44px;
-            border-radius: 14px;
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
             background: linear-gradient(135deg, rgba(99,102,241,0.15), rgba(139,92,246,0.25));
             border: 1px solid rgba(139,92,246,0.3);
             color: #a78bfa;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 18px;
+            font-size: 15px;
             flex-shrink: 0;
         }
         .update-icon-badge-dot {
             position: absolute;
             top: -2px;
             right: -2px;
-            width: 10px;
-            height: 10px;
+            width: 8px;
+            height: 8px;
             border-radius: 50%;
             background: #10b981;
-            box-shadow: 0 0 8px #10b981;
+            box-shadow: 0 0 6px #10b981;
         }
         .update-header-titles {
             display: flex;
             flex-direction: column;
-            gap: 2px;
+            gap: 1px;
         }
         .update-modal-category {
-            font-size: 10px;
+            font-size: 9.5px;
             font-weight: 700;
-            letter-spacing: 0.1em;
+            letter-spacing: 0.09em;
             text-transform: uppercase;
             color: #10b981;
         }
         .update-modal-title {
             margin: 0;
-            font-size: 17px;
+            font-size: 15px;
             font-weight: 700;
             color: #f9fafb;
         }
@@ -215,7 +215,7 @@
             background: none;
             border: none;
             color: #6b7280;
-            font-size: 22px;
+            font-size: 20px;
             cursor: pointer;
             line-height: 1;
             transition: color 0.2s;
@@ -223,10 +223,10 @@
         }
         .modal-close-x:hover { color: #f3f4f6; }
         .update-modal-body {
-            padding: 20px 22px;
+            padding: 14px 18px;
             display: flex;
             flex-direction: column;
-            gap: 16px;
+            gap: 12px;
         }
         .update-checking-state {
             display: flex;
@@ -236,8 +236,8 @@
             font-size: 13px;
         }
         .update-spinner {
-            width: 18px;
-            height: 18px;
+            width: 16px;
+            height: 16px;
             border-radius: 50%;
             border: 2px solid rgba(99,102,241,0.2);
             border-top-color: #6366f1;
@@ -247,24 +247,24 @@
         .update-result-state {
             display: flex;
             flex-direction: column;
-            gap: 14px;
+            gap: 12px;
         }
         /* Version track row */
         .update-version-track-row {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            gap: 10px;
-            margin-bottom: 2px;
+            gap: 8px;
+            margin-bottom: 0px;
         }
         .update-ver-pill {
             display: inline-flex;
             align-items: center;
-            gap: 8px;
-            padding: 8px 16px;
-            border-radius: 20px;
+            gap: 6px;
+            padding: 6px 14px;
+            border-radius: 16px;
             font-family: 'JetBrains Mono', monospace;
-            font-size: 13.5px;
+            font-size: 12.5px;
             font-weight: 600;
             background: rgba(255, 255, 255, 0.05);
             border: 1px solid rgba(255, 255, 255, 0.09);
@@ -274,10 +274,10 @@
             background: linear-gradient(135deg, #10b981, #059669);
             border-color: rgba(16, 185, 129, 0.4);
             color: #ffffff;
-            box-shadow: 0 4px 14px rgba(16, 185, 129, 0.35);
+            box-shadow: 0 3px 12px rgba(16, 185, 129, 0.3);
         }
         .update-ver-pill .ver-icon {
-            font-size: 12px;
+            font-size: 11px;
             opacity: 0.85;
         }
         .update-track-connector {
@@ -285,7 +285,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 6px;
+            gap: 4px;
         }
         .update-track-connector .track-line {
             flex: 1;
@@ -294,7 +294,7 @@
         }
         .update-track-connector .track-chevrons {
             color: #10b981;
-            font-size: 13px;
+            font-size: 12px;
             font-weight: 700;
             letter-spacing: -2px;
         }
@@ -302,95 +302,63 @@
         .update-notes-container {
             background: rgba(255, 255, 255, 0.03);
             border: 1px solid rgba(255, 255, 255, 0.07);
-            border-radius: 16px;
-            padding: 14px 16px;
+            border-radius: 14px;
+            padding: 12px 14px;
         }
         .update-notes-header {
             display: flex;
             align-items: center;
-            gap: 8px;
-            font-size: 10.5px;
+            gap: 6px;
+            font-size: 10px;
             font-weight: 700;
-            letter-spacing: 0.09em;
+            letter-spacing: 0.08em;
             color: #10b981;
             text-transform: uppercase;
-            margin-bottom: 12px;
+            margin-bottom: 8px;
         }
         .update-notes-list {
             display: flex;
             flex-direction: column;
-            gap: 10px;
-            max-height: 170px;
+            gap: 7px;
+            max-height: 140px;
             overflow-y: auto;
             padding-right: 4px;
         }
-        .update-notes-list::-webkit-scrollbar { width: 4px; }
-        .update-notes-list::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radius: 4px; }
+        .update-notes-list::-webkit-scrollbar { width: 3px; }
+        .update-notes-list::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radius: 3px; }
 
-        .note-item-row {
+        .note-bullet-row {
             display: flex;
             align-items: flex-start;
-            gap: 10px;
-        }
-        .note-item-icon-box {
-            width: 26px;
-            height: 26px;
-            border-radius: 8px;
-            background: rgba(99, 102, 241, 0.12);
-            color: #a78bfa;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 11px;
-            flex-shrink: 0;
-            margin-top: 1px;
-        }
-        .note-item-content {
-            display: flex;
-            align-items: baseline;
-            flex-wrap: wrap;
-            gap: 6px;
-            font-size: 12.5px;
-            line-height: 1.5;
+            gap: 8px;
+            font-size: 12px;
+            line-height: 1.45;
             color: #d1d5db;
         }
-        .note-badge {
-            display: inline-block;
-            font-size: 9.5px;
-            font-weight: 800;
-            letter-spacing: 0.05em;
-            padding: 2px 7px;
-            border-radius: 5px;
-            text-transform: uppercase;
+        .note-bullet-dot {
+            color: #10b981;
+            font-weight: 700;
+            font-size: 14px;
+            line-height: 1;
+            margin-top: 1px;
+            flex-shrink: 0;
         }
-        .note-badge.badge-new, .note-badge.badge-added {
-            background: rgba(16, 185, 129, 0.15);
-            color: #34d399;
-            border: 1px solid rgba(16, 185, 129, 0.3);
-        }
-        .note-badge.badge-fixed {
-            background: rgba(245, 158, 11, 0.15);
-            color: #fbbf24;
-            border: 1px solid rgba(245, 158, 11, 0.3);
-        }
-        .note-badge.badge-updated {
-            background: rgba(99, 102, 241, 0.15);
-            color: #a78bfa;
-            border: 1px solid rgba(99, 102, 241, 0.3);
+        .note-bullet-text {
+            word-break: break-word;
         }
         /* Footer buttons */
         .update-modal-footer {
             display: flex;
             align-items: center;
-            gap: 12px;
-            padding: 14px 22px 20px;
+            gap: 10px;
+            padding: 10px 18px 14px;
             border-top: 1px solid rgba(255, 255, 255, 0.06);
         }
         .update-btn-later {
             flex: 1;
-            height: 42px;
-            border-radius: 12px;
-            font-size: 13.5px;
+            height: 38px;
+            border-radius: 10px;
+            font-size: 12.5px;
             font-weight: 600;
             background: rgba(255, 255, 255, 0.06) !important;
             border: 1px solid rgba(255, 255, 255, 0.09) !important;
@@ -402,22 +370,22 @@
         }
         .update-btn-download {
             flex: 1.2;
-            height: 42px;
-            border-radius: 12px;
-            font-size: 13.5px;
+            height: 38px;
+            border-radius: 10px;
+            font-size: 12.5px;
             font-weight: 700;
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            gap: 8px;
+            gap: 6px;
             background: linear-gradient(135deg, #10b981, #059669) !important;
             border: none !important;
             color: #ffffff !important;
-            box-shadow: 0 4px 14px rgba(16, 185, 129, 0.35);
+            box-shadow: 0 3px 12px rgba(16, 185, 129, 0.3);
         }
         .update-btn-download:hover {
             background: linear-gradient(135deg, #34d399, #10b981) !important;
-            box-shadow: 0 6px 18px rgba(16, 185, 129, 0.45);
+            box-shadow: 0 4px 16px rgba(16, 185, 129, 0.4);
         }
     </style>
 </head>
@@ -1946,37 +1914,11 @@
             const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
             return lines.map(line => {
                 let clean = line.replace(/^[•\-\*]\s*/, '').trim();
-                let badgeType = 'NEW';
-                let badgeClass = 'badge-new';
-                let iconClass = 'fa-solid fa-layer-group';
-
-                const lower = clean.toLowerCase();
-                if (lower.includes('fix') || lower.includes('bug') || lower.includes('stuck') || lower.includes('popdown')) {
-                    badgeType = 'FIXED';
-                    badgeClass = 'badge-fixed';
-                    iconClass = 'fa-solid fa-wrench';
-                } else if (lower.includes('add') || lower.includes('new') || lower.includes('support')) {
-                    badgeType = 'ADDED';
-                    badgeClass = 'badge-added';
-                    iconClass = 'fa-solid fa-box-archive';
-                } else if (lower.includes('update') || lower.includes('optimize') || lower.includes('smooth') || lower.includes('perform')) {
-                    badgeType = 'UPDATED';
-                    badgeClass = 'badge-updated';
-                    iconClass = 'fa-solid fa-sliders';
-                }
-
-                // Escape HTML characters safely
                 const safeText = clean.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-
                 return `
-                    <div class="note-item-row">
-                        <div class="note-item-icon-box">
-                            <i class="${iconClass}"></i>
-                        </div>
-                        <div class="note-item-content">
-                            <span class="note-badge ${badgeClass}">${badgeType}</span>
-                            <span class="note-text">${safeText}</span>
-                        </div>
+                    <div class="note-bullet-row">
+                        <span class="note-bullet-dot">•</span>
+                        <span class="note-bullet-text">${safeText}</span>
                     </div>
                 `;
             }).join('');
