@@ -131,19 +131,32 @@ def get_app_version():
 GITHUB_REPO = "thoem-sin/video-dubber"
 GITHUB_BRANCH = "main"
 
-# Cache update result for 5 minutes to avoid hammering network
+# Cache update result for 10 seconds
 _update_cache = {"result": None, "expires": 0}
+
+def _parse_version_tuple(v_str):
+    """Safely parse version string into integer tuple for accurate comparison (e.g. '1.2.3' -> (1, 2, 3))."""
+    if not v_str:
+        return (0,)
+    try:
+        clean = v_str.strip().lstrip("vV")
+        parts = [int(p) for p in clean.split(".") if p.isdigit()]
+        return tuple(parts) if parts else (0,)
+    except Exception:
+        return (0,)
 
 @app.route("/api/check_update", methods=["GET"])
 def check_update():
-    """Check for updates via version.txt on raw.githubusercontent.com (no rate limits)."""
+    """Check for updates across GitHub Releases, Tags, and raw version.txt."""
     import time as _time
 
-    if _update_cache["result"] and _time.time() < _update_cache["expires"]:
+    # Bypass cache if query param ?force=1 or cache expired
+    force = request.args.get("force") == "1"
+    if not force and _update_cache["result"] and _time.time() < _update_cache["expires"]:
         return jsonify(_update_cache["result"])
 
     curr_ver = get_app_version()
-    latest_tag = ""
+    found_versions = []
     html_url = f"https://github.com/{GITHUB_REPO}/releases"
     notes = ""
 
@@ -152,55 +165,58 @@ def check_update():
         with urllib.request.urlopen(req, timeout=6) as r:
             return r.read().decode("utf-8").strip()
 
-    # Method 1: Read version.txt from raw.githubusercontent.com — NO rate limits
+    # 1. Fetch GitHub Tags API (finds all release tags like v1.2.3)
     try:
-        raw_url = f"https://raw.githubusercontent.com/{GITHUB_REPO}/{GITHUB_BRANCH}/version.txt"
-        latest_tag = fetch(raw_url).splitlines()[0].strip().lstrip("v")
+        import json as _json
+        req = urllib.request.Request(
+            f"https://api.github.com/repos/{GITHUB_REPO}/tags",
+            headers={"User-Agent": "VideoDubberStudio/1.2"}
+        )
+        with urllib.request.urlopen(req, timeout=5) as r:
+            tags_data = _json.loads(r.read())
+        for t in tags_data:
+            tag_name = t.get("name", "").strip().lstrip("v")
+            if tag_name:
+                found_versions.append(tag_name)
     except Exception:
         pass
 
-    # Also fetch release notes from RELEASE_NOTES.txt
+    # 2. Read version.txt from raw.githubusercontent.com
+    try:
+        raw_url = f"https://raw.githubusercontent.com/{GITHUB_REPO}/{GITHUB_BRANCH}/version.txt"
+        v_txt = fetch(raw_url).splitlines()[0].strip().lstrip("v")
+        if v_txt:
+            found_versions.append(v_txt)
+    except Exception:
+        pass
+
+    # 3. Fetch release notes from RELEASE_NOTES.txt
     try:
         notes_url = f"https://raw.githubusercontent.com/{GITHUB_REPO}/{GITHUB_BRANCH}/RELEASE_NOTES.txt"
         notes = fetch(notes_url)
     except Exception:
         pass
 
-    # Method 2: GitHub Tags API (fallback)
-    if not latest_tag:
-        try:
-            import json as _json
-            req = urllib.request.Request(
-                f"https://api.github.com/repos/{GITHUB_REPO}/tags",
-                headers={"User-Agent": "VideoDubberStudio/1.2"}
-            )
-            with urllib.request.urlopen(req, timeout=5) as r:
-                tags_data = _json.loads(r.read())
-            if tags_data:
-                latest_tag = tags_data[0].get("name", "").lstrip("v").strip()
-        except Exception:
-            pass
+    # Determine highest version found
+    highest_tag = curr_ver
+    if found_versions:
+        highest_tag = max(found_versions, key=_parse_version_tuple)
 
-    update_available = False
-    if latest_tag:
-        try:
-            curr_parts = [int(p) for p in curr_ver.split(".") if p.isdigit()]
-            latest_parts = [int(p) for p in latest_tag.split(".") if p.isdigit()]
-            update_available = latest_parts > curr_parts
-        except Exception:
-            pass
+    curr_tuple = _parse_version_tuple(curr_ver)
+    latest_tuple = _parse_version_tuple(highest_tag)
+    update_available = latest_tuple > curr_tuple
 
     result = {
         "status": "ok",
         "current_version": curr_ver,
-        "latest_version": latest_tag or curr_ver,
+        "latest_version": highest_tag,
         "has_update": update_available,
         "update_available": update_available,
         "download_url": html_url,
         "release_notes": notes
     }
     _update_cache["result"] = result
-    _update_cache["expires"] = _time.time() + 300
+    _update_cache["expires"] = _time.time() + 10  # 10s short cache
     return jsonify(result)
 
 
