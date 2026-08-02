@@ -1997,18 +1997,16 @@
                 .then(r => r.json())
                 .then(res => {
                     if (res.status === 'ok') {
+                        // Success — always show Restart Now button
+                        btn.classList.add('hidden');
+                        document.getElementById('uiRestartBtn').classList.remove('hidden');
+                        if (laterBtn) laterBtn.disabled = false;
                         if (res.already_up_to_date) {
-                            // Already latest
-                            icon.className = 'fa-solid fa-circle-check';
-                            label.textContent = 'Already Up to Date';
-                            btn.disabled = false;
-                            btn.classList.remove('btn-installing');
-                            if (laterBtn) laterBtn.disabled = false;
+                            document.getElementById('updateModalTitle').textContent = 'Already Up to Date';
+                            if (typeof showToast === 'function') {
+                                showToast('✅ Already on the latest version. You can restart to confirm.', 'success');
+                            }
                         } else {
-                            // Success — show restart button
-                            btn.classList.add('hidden');
-                            document.getElementById('uiRestartBtn').classList.remove('hidden');
-                            if (laterBtn) laterBtn.disabled = false;
                             document.getElementById('updateModalTitle').textContent = 'Update Installed!';
                             if (typeof showToast === 'function') {
                                 showToast('✅ Update applied! Restart the app to use the new version.', 'success');
