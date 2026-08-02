@@ -114,7 +114,8 @@ def get_gpu_status():
         "ffmpeg_encoder": caps["ffmpeg_encoder"]
     })
 
-APP_VERSION = "1.0.0"
+APP_VERSION = "1.2.1"
+
 GITHUB_REPO = "Thoem-Sin/Video-Dubber"
 
 @app.route("/api/check_update", methods=["GET"])

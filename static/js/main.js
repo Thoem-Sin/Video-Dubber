@@ -35,11 +35,23 @@ function showToast(message, type = 'info', duration = 2000) {
         toast.classList.add('show');
     });
 
-    const timer = setTimeout(() => {
-        dismissToast(toast);
-    }, duration);
+    let dismissTimer = null;
+    const startDismissTimer = (ttl = duration) => {
+        if (dismissTimer) clearTimeout(dismissTimer);
+        dismissTimer = setTimeout(() => {
+            dismissToast(toast);
+        }, ttl);
+    };
 
-    toast.addEventListener('mouseenter', () => clearTimeout(timer));
+    startDismissTimer();
+
+    // Pause on hover, resume auto-popdown on mouseleave
+    toast.addEventListener('mouseenter', () => {
+        if (dismissTimer) clearTimeout(dismissTimer);
+    });
+    toast.addEventListener('mouseleave', () => {
+        startDismissTimer(1400);
+    });
 }
 
 function dismissToast(toastEl) {
@@ -48,9 +60,10 @@ function dismissToast(toastEl) {
     toastEl.classList.remove('show');
     toastEl.classList.add('popdown');
     setTimeout(() => {
-        if (toastEl.parentElement) toastEl.remove();
+        if (toastEl && toastEl.parentElement) toastEl.remove();
     }, 260);
 }
+
 
 
 
