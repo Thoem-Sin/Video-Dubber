@@ -142,6 +142,7 @@ def check_update():
                 "status": "ok",
                 "current_version": APP_VERSION,
                 "latest_version": latest_tag or APP_VERSION,
+                "has_update": update_available,
                 "update_available": update_available,
                 "download_url": html_url,
                 "release_notes": notes
@@ -151,10 +152,12 @@ def check_update():
             "status": "error",
             "current_version": APP_VERSION,
             "latest_version": APP_VERSION,
+            "has_update": False,
             "update_available": False,
             "download_url": f"https://github.com/{GITHUB_REPO}/releases",
             "message": str(ex)
         })
+
 
 JOBS = {}
 

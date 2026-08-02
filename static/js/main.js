@@ -2469,69 +2469,19 @@ async function deleteGlobalPreset() {
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => {
         initGlobalPresetDropdown();
-        setTimeout(() => checkAppUpdates(true), 3000);
+        if (typeof silentCheckForUpdates === 'function') {
+            setTimeout(silentCheckForUpdates, 3000);
+        }
     });
 } else {
     setTimeout(() => {
         initGlobalPresetDropdown();
-        checkAppUpdates(true);
+        if (typeof silentCheckForUpdates === 'function') {
+            silentCheckForUpdates();
+        }
     }, 100);
 }
 
-async function checkAppUpdates(silent = true) {
-    try {
-        const resp = await fetch('/api/check_update');
-        const data = await resp.json();
-        if (data.status === 'ok') {
-            if (data.update_available) {
-                showUpdateBanner(data.latest_version, data.download_url, data.release_notes);
-            } else if (!silent) {
-                if (typeof showToast === 'function') {
-                    showToast(`✅ You are using the latest version (v${data.current_version})`, 'info');
-                }
-            }
-        }
-    } catch (e) {
-        console.warn('Update check failed:', e);
-    }
-}
-
-function showUpdateBanner(newVersion, downloadUrl, notes) {
-    let banner = document.getElementById('appUpdateBanner');
-    if (!banner) {
-        banner = document.createElement('div');
-        banner.id = 'appUpdateBanner';
-        banner.style.cssText = `
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            z-index: 99999;
-            background: linear-gradient(135deg, #1e1b4b, #312e81);
-            border: 1px solid #6366f1;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-            border-radius: 12px;
-            padding: 14px 18px;
-            color: #fff;
-            font-family: 'Inter', system-ui, sans-serif;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            max-width: 380px;
-        `;
-        document.body.appendChild(banner);
-    }
-    banner.innerHTML = `
-        <div style="font-size: 24px; color: #818cf8;"><i class="fa-solid fa-cloud-arrow-down"></i></div>
-        <div style="flex:1;">
-            <div style="font-weight:700; font-size:14px;">Update Available: v${newVersion}</div>
-            <div style="font-size:12px; color:#c7d2fe; margin-top:2px;">A new version of Video Dubber is online!</div>
-        </div>
-        <a href="${downloadUrl}" target="_blank" style="background:#6366f1; color:#fff; text-decoration:none; padding:6px 12px; border-radius:6px; font-size:12px; font-weight:600; transition:background 0.2s;">
-            Download
-        </a>
-        <button onclick="document.getElementById('appUpdateBanner').remove()" style="background:none; border:none; color:#9ca3af; cursor:pointer; font-size:14px; padding:2px;">✕</button>
-    `;
-}
 
 
 function _setTestBtnState(btnId, state, message) {
