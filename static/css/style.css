@@ -3857,8 +3857,8 @@ body.light-theme .batch-progress-pct {
 /* ─── Modern Toast Notification System (Compact & Small) ─────────────────── */
 #toastContainer {
     position: fixed;
-    top: 16px;
-    right: 16px;
+    top: 76px;
+    right: 20px;
     z-index: 9999999 !important;
     display: flex;
     flex-direction: column;
@@ -3867,6 +3867,7 @@ body.light-theme .batch-progress-pct {
     max-width: 320px;
     width: calc(100vw - 32px);
 }
+
 
 .toast-message {
     pointer-events: auto;
