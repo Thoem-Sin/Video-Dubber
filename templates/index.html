@@ -1767,9 +1767,30 @@
         let _updateData = null;
 
         function openUpdateModal() {
-            const backdrop = document.getElementById('updateModalBackdrop');
-            backdrop.classList.remove('hidden');
-            runUpdateCheck();
+            if (typeof showToast === 'function') {
+                showToast('🔍 Checking for updates online...', 'info');
+            }
+            fetch('/api/check_update')
+                .then(r => r.json())
+                .then(data => {
+                    _updateData = data;
+                    if (data.has_update) {
+                        // Popup the dialog ONLY when an update is available
+                        document.getElementById('updateModalBackdrop').classList.remove('hidden');
+                        renderUpdateResult(data);
+                    } else {
+                        // Don't popup dialog, just show alert message!
+                        document.getElementById('updateModalBackdrop').classList.add('hidden');
+                        if (typeof showToast === 'function') {
+                            showToast(`✅ You are running the latest version (v${data.current_version || '1.0.0'})`, 'success');
+                        }
+                    }
+                })
+                .catch(err => {
+                    if (typeof showToast === 'function') {
+                        showToast('⚠️ Could not check for updates. Please check your connection.', 'warning');
+                    }
+                });
         }
 
         function closeUpdateModal(e) {
@@ -1778,28 +1799,9 @@
         }
 
         function runUpdateCheck() {
-            // Reset to checking state
-            document.getElementById('updateCheckingState').classList.remove('hidden');
-            document.getElementById('updateResultState').classList.add('hidden');
-            document.getElementById('uiDownloadBtn').classList.add('hidden');
-
-            fetch('/api/check_update')
-                .then(r => r.json())
-                .then(data => {
-                    _updateData = data;
-                    renderUpdateResult(data);
-                })
-                .catch(err => {
-                    renderUpdateResult({
-                        ok: false,
-                        current_version: '—',
-                        latest_version: '—',
-                        has_update: false,
-                        release_notes: 'Could not reach update server. Check your internet connection.',
-                        download_url: ''
-                    });
-                });
+            openUpdateModal();
         }
+
 
         function renderUpdateResult(data) {
             document.getElementById('updateCheckingState').classList.add('hidden');
