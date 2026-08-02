@@ -394,34 +394,91 @@
             color: #ffffff !important;
             box-shadow: 0 2px 10px rgba(16, 185, 129, 0.3) !important;
         }
-        .update-modal-footer .update-modal-btn.btn-download:hover:not(:disabled) {
+        .update-modal-footer .update-modal-btn.btn-download:hover {
             background: linear-gradient(135deg, #34d399, #10b981) !important;
             box-shadow: 0 3px 14px rgba(16, 185, 129, 0.4) !important;
         }
-        .update-modal-footer .update-modal-btn.btn-download.btn-installing {
-            background: linear-gradient(135deg, #374151, #4b5563) !important;
-            box-shadow: none !important;
-            cursor: not-allowed !important;
-            opacity: 0.85 !important;
+        /* ─── Install Progress Dialog ─────────────────────────────────────── */
+        .ipd-backdrop {
+            position: fixed; inset: 0; z-index: 9999;
+            background: rgba(0,0,0,0.65);
+            backdrop-filter: blur(6px);
+            display: flex; align-items: center; justify-content: center;
+            animation: ipdFadeIn 0.2s ease;
         }
-        .update-modal-footer .update-modal-btn.btn-download.btn-error {
-            background: linear-gradient(135deg, #ef4444, #dc2626) !important;
-            box-shadow: 0 2px 10px rgba(239, 68, 68, 0.3) !important;
+        .ipd-backdrop.hidden { display: none; }
+        @keyframes ipdFadeIn { from { opacity:0; } to { opacity:1; } }
+        .ipd-card {
+            background: #1a1f2e;
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 18px;
+            padding: 32px 28px 24px;
+            width: 320px;
+            max-width: 90vw;
+            text-align: center;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+            animation: ipdSlideIn 0.25s cubic-bezier(0.34,1.56,0.64,1);
         }
-        .update-modal-footer .update-modal-btn.btn-restart {
-            background: linear-gradient(135deg, #6366f1, #4f46e5) !important;
-            border: 1px solid transparent !important;
-            color: #ffffff !important;
-            box-shadow: 0 2px 10px rgba(99, 102, 241, 0.35) !important;
+        @keyframes ipdSlideIn { from { transform: scale(0.85) translateY(20px); opacity:0; } to { transform: scale(1) translateY(0); opacity:1; } }
+        .ipd-icon-wrap {
+            width: 72px; height: 72px;
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            margin: 0 auto 16px;
+            position: relative;
         }
-        .update-modal-footer .update-modal-btn.btn-restart:hover:not(:disabled) {
-            background: linear-gradient(135deg, #818cf8, #6366f1) !important;
-            box-shadow: 0 3px 14px rgba(99, 102, 241, 0.45) !important;
+        .ipd-icon-wrap.processing { background: rgba(99,102,241,0.15); }
+        .ipd-icon-wrap.success    { background: rgba(16,185,129,0.15); }
+        .ipd-icon-wrap.error      { background: rgba(239,68,68,0.15); }
+        .ipd-spinner-ring {
+            position: absolute; inset: 0;
+            border-radius: 50%;
+            border: 3px solid transparent;
+            border-top-color: #6366f1;
+            border-right-color: #6366f1;
+            animation: ipdSpin 0.9s linear infinite;
         }
-        .update-modal-footer .update-modal-btn:disabled {
-            opacity: 0.55 !important;
-            cursor: not-allowed !important;
+        @keyframes ipdSpin { to { transform: rotate(360deg); } }
+        .ipd-icon { font-size: 26px; position: relative; z-index: 1; }
+        .ipd-icon-wrap.processing .ipd-icon { color: #818cf8; }
+        .ipd-icon-wrap.success    .ipd-icon { color: #10b981; }
+        .ipd-icon-wrap.error      .ipd-icon { color: #ef4444; }
+        .ipd-title {
+            font-size: 16px; font-weight: 700;
+            color: #f1f5f9; margin: 0 0 8px;
         }
+        .ipd-sub {
+            font-size: 12.5px; color: #94a3b8;
+            margin: 0 0 20px; line-height: 1.5;
+        }
+        .ipd-actions {
+            display: flex; gap: 8px; justify-content: center;
+            margin-top: 4px;
+        }
+        .ipd-btn {
+            flex: 1; height: 36px; border-radius: 9px;
+            font-size: 12px; font-weight: 600;
+            border: none; cursor: pointer;
+            display: inline-flex; align-items: center;
+            justify-content: center; gap: 6px;
+            transition: all 0.2s;
+        }
+        .ipd-btn-later {
+            background: rgba(255,255,255,0.07);
+            color: #94a3b8;
+            border: 1px solid rgba(255,255,255,0.08) !important;
+        }
+        .ipd-btn-later:hover { background: rgba(255,255,255,0.13); color:#e2e8f0; }
+        .ipd-btn-restart {
+            background: linear-gradient(135deg,#6366f1,#4f46e5);
+            color: #fff;
+            box-shadow: 0 2px 10px rgba(99,102,241,0.35);
+        }
+        .ipd-btn-restart:hover:not(:disabled) {
+            background: linear-gradient(135deg,#818cf8,#6366f1);
+            box-shadow: 0 3px 14px rgba(99,102,241,0.5);
+        }
+        .ipd-btn-restart:disabled { opacity:0.6; cursor:not-allowed; }
     </style>
 
 </head>
@@ -550,13 +607,47 @@
                 <div class="update-modal-footer">
                     <button type="button" class="update-modal-btn btn-later" id="uiBtnLater" onclick="closeUpdateModal()">Maybe Later</button>
                     <button type="button" class="update-modal-btn btn-download hidden" id="uiDownloadBtn" onclick="installUpdate()">
-                        <i class="fa-solid fa-cloud-arrow-down" id="uiInstallIcon"></i>
-                        <span id="uiInstallLabel">Download &amp; Install</span>
+                        <i class="fa-solid fa-cloud-arrow-down"></i>
+                        <span>Download &amp; Install</span>
                     </button>
-                    <button type="button" class="update-modal-btn btn-restart hidden" id="uiRestartBtn" onclick="restartApp()">
-                        <i class="fa-solid fa-rotate-right"></i>
-                        <span>Restart Now</span>
-                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ─── Install Progress Dialog ─────────────────────────────────── -->
+        <div class="ipd-backdrop hidden" id="ipdBackdrop">
+            <div class="ipd-card" id="ipdCard">
+                <!-- Processing state -->
+                <div id="ipdStateProcessing">
+                    <div class="ipd-icon-wrap processing">
+                        <div class="ipd-spinner-ring"></div>
+                        <i class="fa-solid fa-cloud-arrow-down ipd-icon"></i>
+                    </div>
+                    <h3 class="ipd-title">Downloading Update</h3>
+                    <p class="ipd-sub" id="ipdSubText">Fetching latest code from GitHub<span class="splash-dots"><span>.</span><span>.</span><span>.</span></span></p>
+                </div>
+                <!-- Success state -->
+                <div id="ipdStateSuccess" class="hidden">
+                    <div class="ipd-icon-wrap success">
+                        <i class="fa-solid fa-circle-check ipd-icon"></i>
+                    </div>
+                    <h3 class="ipd-title" id="ipdSuccessTitle">Update Installed!</h3>
+                    <p class="ipd-sub">Restart the app to apply the new version.</p>
+                    <div class="ipd-actions">
+                        <button type="button" class="ipd-btn ipd-btn-later" onclick="closeIpd()">Later</button>
+                        <button type="button" class="ipd-btn ipd-btn-restart" id="ipdRestartBtn" onclick="restartApp()"><i class="fa-solid fa-rotate-right"></i> Restart Now</button>
+                    </div>
+                </div>
+                <!-- Error state -->
+                <div id="ipdStateError" class="hidden">
+                    <div class="ipd-icon-wrap error">
+                        <i class="fa-solid fa-triangle-exclamation ipd-icon"></i>
+                    </div>
+                    <h3 class="ipd-title">Update Failed</h3>
+                    <p class="ipd-sub" id="ipdErrorMsg">An unexpected error occurred.</p>
+                    <div class="ipd-actions">
+                        <button type="button" class="ipd-btn ipd-btn-later" onclick="closeIpd()">Close</button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -1968,82 +2059,56 @@
             }).join('');
         }
 
-        /* ─── In-App Auto Installer ────────────────────────────────────── */
-        function resetInstallBtn() {
-            const btn = document.getElementById('uiDownloadBtn');
-            const icon = document.getElementById('uiInstallIcon');
-            const label = document.getElementById('uiInstallLabel');
-            if (!btn) return;
-            btn.disabled = false;
-            btn.classList.remove('btn-installing', 'btn-error');
-            icon.className = 'fa-solid fa-cloud-arrow-down';
-            label.textContent = 'Download & Install';
+        /* ─── Install Progress Dialog ───────────────────────────────────── */
+        function openIpd() {
+            // Reset to processing state
+            document.getElementById('ipdStateProcessing').classList.remove('hidden');
+            document.getElementById('ipdStateSuccess').classList.add('hidden');
+            document.getElementById('ipdStateError').classList.add('hidden');
+            document.getElementById('ipdBackdrop').classList.remove('hidden');
+        }
+        function closeIpd() {
+            document.getElementById('ipdBackdrop').classList.add('hidden');
+        }
+        function ipdShowSuccess(alreadyUpToDate) {
+            document.getElementById('ipdStateProcessing').classList.add('hidden');
+            document.getElementById('ipdStateError').classList.add('hidden');
+            document.getElementById('ipdSuccessTitle').textContent = alreadyUpToDate ? 'Already Up to Date' : 'Update Installed!';
+            document.getElementById('ipdStateSuccess').classList.remove('hidden');
+        }
+        function ipdShowError(msg) {
+            document.getElementById('ipdStateProcessing').classList.add('hidden');
+            document.getElementById('ipdStateSuccess').classList.add('hidden');
+            document.getElementById('ipdErrorMsg').textContent = msg || 'An unexpected error occurred.';
+            document.getElementById('ipdStateError').classList.remove('hidden');
         }
 
+        /* ─── In-App Auto Installer ────────────────────────────────────── */
         function installUpdate() {
-            const btn = document.getElementById('uiDownloadBtn');
-            const icon = document.getElementById('uiInstallIcon');
-            const label = document.getElementById('uiInstallLabel');
-            const laterBtn = document.getElementById('uiBtnLater');
-
-            // Show installing state
-            btn.disabled = true;
-            btn.classList.add('btn-installing');
-            icon.className = 'fa-solid fa-spinner fa-spin';
-            label.textContent = 'Installing...';
-            if (laterBtn) laterBtn.disabled = true;
+            // Close the update modal and open the progress dialog
+            document.getElementById('updateModalBackdrop').classList.add('hidden');
+            openIpd();
 
             fetch('/api/install_update', { method: 'POST' })
                 .then(r => r.json())
                 .then(res => {
                     if (res.status === 'ok') {
-                        // Success — always show Restart Now button
-                        btn.classList.add('hidden');
-                        document.getElementById('uiRestartBtn').classList.remove('hidden');
-                        if (laterBtn) laterBtn.disabled = false;
-                        if (res.already_up_to_date) {
-                            document.getElementById('updateModalTitle').textContent = 'Already Up to Date';
-                            if (typeof showToast === 'function') {
-                                showToast('✅ Already on the latest version. You can restart to confirm.', 'success');
-                            }
-                        } else {
-                            document.getElementById('updateModalTitle').textContent = 'Update Installed!';
-                            if (typeof showToast === 'function') {
-                                showToast('✅ Update applied! Restart the app to use the new version.', 'success');
-                            }
-                        }
+                        ipdShowSuccess(res.already_up_to_date);
                     } else {
-                        // Error
-                        btn.disabled = false;
-                        btn.classList.remove('btn-installing');
-                        btn.classList.add('btn-error');
-                        icon.className = 'fa-solid fa-triangle-exclamation';
-                        label.textContent = 'Update Failed';
-                        if (laterBtn) laterBtn.disabled = false;
-                        if (typeof showToast === 'function') {
-                            showToast('❌ Update failed: ' + (res.message || 'Unknown error'), 'error');
-                        }
-                        setTimeout(resetInstallBtn, 3000);
+                        ipdShowError(res.message || 'Update failed.');
                     }
                 })
-                .catch(err => {
-                    btn.disabled = false;
-                    btn.classList.remove('btn-installing');
-                    btn.classList.add('btn-error');
-                    icon.className = 'fa-solid fa-triangle-exclamation';
-                    label.textContent = 'Update Failed';
-                    if (laterBtn) laterBtn.disabled = false;
-                    if (typeof showToast === 'function') {
-                        showToast('❌ Network error during update. Check your connection.', 'error');
-                    }
-                    setTimeout(resetInstallBtn, 3000);
+                .catch(() => {
+                    ipdShowError('Network error. Please check your internet connection.');
                 });
         }
 
         function restartApp() {
-            const btn = document.getElementById('uiRestartBtn');
-            btn.disabled = true;
-            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> <span>Restarting...</span>';
+            const btn = document.getElementById('ipdRestartBtn');
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Restarting...';
+            }
             fetch('/api/restart_app', { method: 'POST' })
                 .then(() => {
                     if (typeof showToast === 'function') {
