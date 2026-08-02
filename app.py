@@ -154,7 +154,7 @@ def _parse_version_tuple(v_str):
 
 @app.route("/api/check_update", methods=["GET"])
 def check_update():
-    """Check for updates across GitHub Releases, Tags, and raw version.txt."""
+    """Check for updates across GitHub Releases API and raw version.txt."""
     import time as _time
 
     # Bypass cache if query param ?force=1 or cache expired
@@ -166,23 +166,24 @@ def check_update():
     found_versions = []
     html_url = f"https://github.com/{GITHUB_REPO}/releases"
 
-    def fetch(url, headers=None):
-        req = urllib.request.Request(url, headers=headers or {"User-Agent": "VideoDubberStudio/1.2"})
-        with urllib.request.urlopen(req, timeout=6) as r:
-            return r.read().decode("utf-8").strip()
+    GH_HEADERS = {
+        "User-Agent": "VideoDubberStudio/1.2",
+        "Accept": "application/vnd.github+json",
+        "X-GitHub-Api-Version": "2022-11-28"
+    }
 
-    # 1. Fetch GitHub Releases API - gives us real release notes per tag
-    releases_notes_map = {}  # tag_name (without v) -> release body
+    # 1. Fetch all GitHub Releases — contains tag_name + body (release notes)
+    releases_notes_map = {}  # tag (without v) -> release body
     try:
         import json as _json
         req = urllib.request.Request(
             f"https://api.github.com/repos/{GITHUB_REPO}/releases",
-            headers={"User-Agent": "VideoDubberStudio/1.2"}
+            headers=GH_HEADERS
         )
-        with urllib.request.urlopen(req, timeout=5) as r:
+        with urllib.request.urlopen(req, timeout=8) as r:
             releases_data = _json.loads(r.read())
         for rel in releases_data:
-            tag = rel.get("tag_name", "").strip().lstrip("v")
+            tag = rel.get("tag_name", "").strip().lstrip("vV")
             body = (rel.get("body") or "").strip()
             if tag:
                 releases_notes_map[tag] = body
@@ -190,29 +191,29 @@ def check_update():
     except Exception:
         pass
 
-    # 2. Also check GitHub Tags API (catches tags that have no formal Release)
+    # 2. Fall back to Tags API if Releases returned nothing (e.g. rate limit)
     if not found_versions:
         try:
             import json as _json
             req = urllib.request.Request(
                 f"https://api.github.com/repos/{GITHUB_REPO}/tags",
-                headers={"User-Agent": "VideoDubberStudio/1.2"}
+                headers=GH_HEADERS
             )
-            with urllib.request.urlopen(req, timeout=5) as r:
+            with urllib.request.urlopen(req, timeout=8) as r:
                 tags_data = _json.loads(r.read())
             for t in tags_data:
-                tag_name = t.get("name", "").strip().lstrip("v")
+                tag_name = t.get("name", "").strip().lstrip("vV")
                 if tag_name:
                     found_versions.append(tag_name)
         except Exception:
             pass
 
-    # 3. Read version.txt from raw.githubusercontent.com
+    # 3. Read version.txt from raw.githubusercontent.com (never rate-limited)
     try:
         raw_url = f"https://raw.githubusercontent.com/{GITHUB_REPO}/{GITHUB_BRANCH}/version.txt"
         req = urllib.request.Request(raw_url, headers={"User-Agent": "VideoDubberStudio/1.2"})
         with urllib.request.urlopen(req, timeout=6) as r:
-            v_txt = r.read().decode("utf-8").strip().splitlines()[0].strip().lstrip("v")
+            v_txt = r.read().decode("utf-8").strip().splitlines()[0].strip().lstrip("vV")
         if v_txt:
             found_versions.append(v_txt)
     except Exception:
@@ -223,7 +224,7 @@ def check_update():
     if found_versions:
         highest_tag = max(found_versions, key=_parse_version_tuple)
 
-    # Get release notes directly from GitHub Releases API
+    # Get release notes from the map (GitHub Releases API body)
     notes = releases_notes_map.get(highest_tag, "")
 
     curr_tuple = _parse_version_tuple(curr_ver)
@@ -237,11 +238,12 @@ def check_update():
         "has_update": update_available,
         "update_available": update_available,
         "download_url": html_url,
-        "release_notes": notes
+        "release_notes": notes,
+        "_releases_notes_map": releases_notes_map  # stored in cache for version_history
     }
     _update_cache["result"] = result
-    _update_cache["expires"] = _time.time() + 10  # 10s short cache
-    return jsonify(result)
+    _update_cache["expires"] = _time.time() + 1800  # 30-min session cache
+    return jsonify({k: v for k, v in result.items() if not k.startswith("_")})
 
 
 @app.route("/api/install_update", methods=["POST"])
@@ -365,18 +367,32 @@ def install_update():
 
 @app.route("/api/version_history", methods=["GET"])
 def get_version_history():
-    """Returns all release versions with their actual release notes fetched from GitHub Releases API."""
+    """Returns all release versions with their actual release notes from GitHub Releases API.
+    Re-uses the releases_notes_map cached from check_update when available to avoid extra rate-limit hits."""
     import urllib.request
     import json as _json
+    import time as _time
+
+    GH_HEADERS = {
+        "User-Agent": "VideoDubberStudio/1.2",
+        "Accept": "application/vnd.github+json",
+        "X-GitHub-Api-Version": "2022-11-28"
+    }
 
     releases = []  # list of {tag, version, notes}
     releases_map = {}  # version -> notes
+
+    # Re-use cached releases_notes_map from check_update if available (avoids extra API calls)
+    cached = _update_cache.get("result") or {}
+    cached_map = cached.get("_releases_notes_map", {})
+    if cached_map:
+        releases_map = dict(cached_map)
 
     # 1. Fetch GitHub Releases API (has real per-release notes in 'body')
     try:
         req = urllib.request.Request(
             f"https://api.github.com/repos/{GITHUB_REPO}/releases",
-            headers={"User-Agent": "VideoDubberStudio/1.2"}
+            headers=GH_HEADERS
         )
         with urllib.request.urlopen(req, timeout=8) as r:
             releases_data = _json.loads(r.read())
@@ -393,13 +409,20 @@ def get_version_history():
                 "notes": body
             })
     except Exception:
-        pass
+        # Rate limited — use cached map if available
+        if releases_map:
+            for ver, body in releases_map.items():
+                releases.append({
+                    "tag": f"v{ver}",
+                    "version": ver,
+                    "notes": body
+                })
 
     # 2. Also call Tags API to pick up tags without a formal GitHub Release
     try:
         req = urllib.request.Request(
             f"https://api.github.com/repos/{GITHUB_REPO}/tags",
-            headers={"User-Agent": "VideoDubberStudio/1.2"}
+            headers=GH_HEADERS
         )
         with urllib.request.urlopen(req, timeout=6) as r:
             tags_data = _json.loads(r.read())
