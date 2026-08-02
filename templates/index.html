@@ -143,12 +143,12 @@
             50% { box-shadow: 0 0 14px 5px rgba(139,92,246,1); }
         }
         .update-modal-card {
-            max-width: 480px;
+            max-width: 380px;
             width: 94%;
             padding: 0;
-            border-radius: 20px;
+            border-radius: 18px;
             overflow: hidden;
-            animation: updateModalIn 0.3s cubic-bezier(0.34,1.56,0.64,1);
+            animation: updateModalIn 0.28s cubic-bezier(0.34,1.56,0.64,1);
         }
         @keyframes updateModalIn {
             from { opacity: 0; transform: scale(0.88) translateY(20px); }
@@ -157,73 +157,45 @@
         .update-modal-header {
             display: flex;
             align-items: center;
-            gap: 14px;
-            padding: 22px 24px 16px;
+            justify-content: space-between;
+            padding: 18px 20px 14px;
             border-bottom: 1px solid rgba(255,255,255,0.07);
-            position: relative;
-        }
-        .update-modal-icon-wrap {
-            width: 46px;
-            height: 46px;
-            border-radius: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 18px;
-            flex-shrink: 0;
-            background: linear-gradient(135deg, rgba(99,102,241,0.2), rgba(139,92,246,0.25));
-            border: 1px solid rgba(139,92,246,0.3);
-            color: #a78bfa;
-            transition: background 0.3s, color 0.3s;
-        }
-        .update-modal-icon-wrap.has-update {
-            background: linear-gradient(135deg, rgba(16,185,129,0.15), rgba(5,150,105,0.2));
-            border-color: rgba(16,185,129,0.35);
-            color: #34d399;
         }
         .update-modal-title {
             margin: 0;
-            font-size: 16px;
+            font-size: 15px;
             font-weight: 700;
             color: #f3f4f6;
         }
-        .update-modal-subtitle {
-            margin: 0;
-            font-size: 12px;
-            color: #6b7280;
-        }
         .modal-close-x {
-            position: absolute;
-            top: 14px;
-            right: 16px;
             background: none;
             border: none;
             color: #6b7280;
-            font-size: 22px;
+            font-size: 20px;
             cursor: pointer;
             line-height: 1;
             transition: color 0.2s;
+            padding: 0;
         }
         .modal-close-x:hover { color: #f3f4f6; }
         .update-modal-body {
-            padding: 22px 24px;
-            min-height: 120px;
+            padding: 20px;
             display: flex;
             flex-direction: column;
-            gap: 16px;
+            gap: 14px;
         }
         .update-checking-state {
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 10px;
             color: #9ca3af;
-            font-size: 14px;
+            font-size: 13px;
         }
         .update-spinner {
-            width: 22px;
-            height: 22px;
+            width: 18px;
+            height: 18px;
             border-radius: 50%;
-            border: 3px solid rgba(99,102,241,0.2);
+            border: 2px solid rgba(99,102,241,0.2);
             border-top-color: #6366f1;
             animation: splash-spin 0.8s linear infinite;
             flex-shrink: 0;
@@ -231,19 +203,19 @@
         .update-result-state {
             display: flex;
             flex-direction: column;
-            gap: 16px;
+            gap: 14px;
         }
         .update-version-row {
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 10px;
         }
         .update-version-chip {
             flex: 1;
             background: rgba(255,255,255,0.04);
             border: 1px solid rgba(255,255,255,0.08);
-            border-radius: 12px;
-            padding: 10px 14px;
+            border-radius: 10px;
+            padding: 10px 12px;
             text-align: center;
         }
         .update-version-chip.latest.new-avail {
@@ -260,60 +232,27 @@
         }
         .update-ver-val {
             display: block;
-            font-size: 18px;
+            font-size: 17px;
             font-weight: 700;
             color: #e5e7eb;
             font-family: 'JetBrains Mono', monospace;
         }
         .update-arrow {
             color: #4b5563;
-            font-size: 14px;
+            font-size: 13px;
             flex-shrink: 0;
         }
-        .update-status-banner {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 12px 16px;
-            border-radius: 10px;
-            background: rgba(16,185,129,0.08);
-            border: 1px solid rgba(16,185,129,0.2);
-            color: #34d399;
+        .update-status-text {
+            margin: 0;
             font-size: 13px;
-            font-weight: 500;
-        }
-        .update-status-banner.needs-update {
-            background: rgba(245,158,11,0.08);
-            border-color: rgba(245,158,11,0.25);
-            color: #fbbf24;
-        }
-        .update-notes-box {
-            background: rgba(255,255,255,0.03);
-            border: 1px solid rgba(255,255,255,0.07);
-            border-radius: 10px;
-            padding: 12px 14px;
-        }
-        .update-notes-label {
-            font-size: 11px;
-            text-transform: uppercase;
-            letter-spacing: 0.07em;
-            color: #6b7280;
-            margin-bottom: 8px;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-        .update-notes-content {
-            font-size: 13px;
-            color: #d1d5db;
-            line-height: 1.55;
-            white-space: pre-wrap;
+            color: #9ca3af;
+            text-align: center;
         }
         .update-modal-footer {
             display: flex;
             align-items: center;
             gap: 8px;
-            padding: 14px 24px 20px;
+            padding: 12px 20px 18px;
             border-top: 1px solid rgba(255,255,255,0.06);
         }
         .update-dl-btn {
@@ -402,19 +341,13 @@
         <div class="modal-backdrop hidden" id="updateModalBackdrop" onclick="closeUpdateModal(event)">
             <div class="modal-card update-modal-card glass" id="updateModalCard">
                 <div class="update-modal-header">
-                    <div class="update-modal-icon-wrap" id="updateModalIconWrap">
-                        <i class="fa-solid fa-arrow-up-from-bracket" id="updateModalIcon"></i>
-                    </div>
-                    <div>
-                        <h3 class="update-modal-title" id="updateModalTitle">Check for Updates</h3>
-                        <p class="update-modal-subtitle" id="updateModalSubtitle">AutoVideoDubber Studio PRO</p>
-                    </div>
+                    <h3 class="update-modal-title" id="updateModalTitle">Check for Updates</h3>
                     <button class="modal-close-x" onclick="closeUpdateModal()" title="Close">&times;</button>
                 </div>
                 <div class="update-modal-body" id="updateModalBody">
                     <div class="update-checking-state" id="updateCheckingState">
                         <div class="update-spinner"></div>
-                        <span>Checking for updates online<span class="splash-dots"><span>.</span><span>.</span><span>.</span></span></span>
+                        <span>Checking for updates<span class="splash-dots"><span>.</span><span>.</span><span>.</span></span></span>
                     </div>
                     <div class="update-result-state hidden" id="updateResultState">
                         <div class="update-version-row">
@@ -428,14 +361,7 @@
                                 <span class="update-ver-val" id="uiLatestVer">—</span>
                             </div>
                         </div>
-                        <div class="update-status-banner" id="uiUpdateBanner">
-                            <i class="fa-solid fa-circle-check" id="uiUpdateBannerIcon"></i>
-                            <span id="uiUpdateBannerText">You are on the latest version.</span>
-                        </div>
-                        <div class="update-notes-box" id="uiReleaseNotesBox" style="display:none;">
-                            <div class="update-notes-label"><i class="fa-solid fa-scroll"></i> Release Notes</div>
-                            <div class="update-notes-content" id="uiReleaseNotes"></div>
-                        </div>
+                        <p class="update-status-text" id="uiUpdateBannerText">You are running the latest version.</p>
                     </div>
                 </div>
                 <div class="update-modal-footer">
@@ -443,9 +369,6 @@
                     <a class="btn btn-primary update-dl-btn hidden" id="uiDownloadBtn" href="#" target="_blank">
                         <i class="fa-solid fa-download"></i> Download Update
                     </a>
-                    <button class="btn btn-secondary" id="uiReCheckBtn" onclick="runUpdateCheck()" style="margin-left:auto;">
-                        <i class="fa-solid fa-rotate-right"></i> Re-check
-                    </button>
                 </div>
             </div>
         </div>
@@ -1811,44 +1734,24 @@
             document.getElementById('uiLatestVer').textContent = 'v' + (data.latest_version || '—');
 
             const latestChip = document.getElementById('uiLatestChip');
-            const banner = document.getElementById('uiUpdateBanner');
-            const bannerIcon = document.getElementById('uiUpdateBannerIcon');
-            const bannerText = document.getElementById('uiUpdateBannerText');
-            const iconWrap = document.getElementById('updateModalIconWrap');
+            const statusText = document.getElementById('uiUpdateBannerText');
             const dlBtn = document.getElementById('uiDownloadBtn');
-            const notesBox = document.getElementById('uiReleaseNotesBox');
-            const notesContent = document.getElementById('uiReleaseNotes');
 
             if (data.has_update) {
                 latestChip.classList.add('new-avail');
-                banner.classList.add('needs-update');
-                bannerIcon.className = 'fa-solid fa-triangle-exclamation';
-                bannerText.textContent = 'A new version is available! Please update for the latest features and fixes.';
-                iconWrap.classList.add('has-update');
-                document.getElementById('updateModalTitle').textContent = 'Update Available!';
-                // Show download button
+                statusText.textContent = 'A new version is available!';
+                document.getElementById('updateModalTitle').textContent = 'Update Available';
                 if (data.download_url) {
                     dlBtn.href = data.download_url;
                     dlBtn.classList.remove('hidden');
                 }
-                // Show badge in navbar
                 document.getElementById('updateBadgeDot').style.display = 'block';
             } else {
                 latestChip.classList.remove('new-avail');
-                banner.classList.remove('needs-update');
-                bannerIcon.className = 'fa-solid fa-circle-check';
-                bannerText.textContent = 'You are running the latest version.';
-                iconWrap.classList.remove('has-update');
+                statusText.textContent = 'You are running the latest version.';
                 document.getElementById('updateModalTitle').textContent = 'Up to Date';
                 dlBtn.classList.add('hidden');
                 document.getElementById('updateBadgeDot').style.display = 'none';
-            }
-
-            if (data.release_notes) {
-                notesContent.textContent = data.release_notes;
-                notesBox.style.display = 'block';
-            } else {
-                notesBox.style.display = 'none';
             }
         }
 
