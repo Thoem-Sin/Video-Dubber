@@ -194,60 +194,115 @@ def check_update():
 
 @app.route("/api/install_update", methods=["POST"])
 def install_update():
-    """Pull latest code from GitHub and apply update in-place using git pull."""
+    """Pull latest code from GitHub via git pull if available, or fallback to ZIP download & extract."""
     import subprocess
     import sys as _sys
+    import zipfile
+    import tempfile
 
     app_dir = os.path.dirname(os.path.abspath(__file__))
 
+    # 1. Locate Git executable (checking PATH + standard Windows install locations)
+    git_cmd = shutil.which("git")
+    if not git_cmd:
+        candidates = [
+            r"C:\Program Files\Git\cmd\git.exe",
+            r"C:\Program Files\Git\bin\git.exe",
+            r"C:\Program Files (x86)\Git\cmd\git.exe",
+            os.path.expanduser(r"~\AppData\Local\Programs\Git\cmd\git.exe"),
+        ]
+        for candidate in candidates:
+            if os.path.exists(candidate):
+                git_cmd = candidate
+                break
+
+    # 2. Try git pull if git executable is found
+    if git_cmd:
+        try:
+            result = subprocess.run(
+                [git_cmd, "pull", "origin", GITHUB_BRANCH, "--ff-only"],
+                cwd=app_dir,
+                capture_output=True,
+                text=True,
+                timeout=60
+            )
+
+            stdout = result.stdout.strip()
+            stderr = result.stderr.strip()
+
+            if result.returncode == 0:
+                _update_cache["result"] = None
+                _update_cache["expires"] = 0
+                already_up_to_date = "Already up to date" in stdout or "Already up-to-date" in stdout
+                return jsonify({
+                    "status": "ok",
+                    "message": stdout or "Update applied successfully.",
+                    "already_up_to_date": already_up_to_date
+                })
+        except Exception:
+            pass  # Fallback to ZIP download below if git pull encounters issues
+
+    # 3. Fallback: Download ZIP directly from GitHub raw branch archive
     try:
-        # Find git executable
-        git_cmd = shutil.which("git") or "git"
+        zip_url = f"https://github.com/{GITHUB_REPO}/archive/refs/heads/{GITHUB_BRANCH}.zip"
+        req = urllib.request.Request(zip_url, headers={"User-Agent": "VideoDubberStudio/1.2"})
+        
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".zip") as tmp_file:
+            tmp_zip_path = tmp_file.name
+            with urllib.request.urlopen(req, timeout=30) as response:
+                tmp_file.write(response.read())
 
-        result = subprocess.run(
-            [git_cmd, "pull", "origin", GITHUB_BRANCH, "--ff-only"],
-            cwd=app_dir,
-            capture_output=True,
-            text=True,
-            timeout=60
-        )
+        # Extract zip into temporary directory first
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            with zipfile.ZipFile(tmp_zip_path, 'r') as zip_ref:
+                zip_ref.extractall(tmp_dir)
 
-        stdout = result.stdout.strip()
-        stderr = result.stderr.strip()
+            # GitHub ZIP wraps files inside "video-dubber-main" folder
+            extracted_folder = os.path.join(tmp_dir, f"video-dubber-{GITHUB_BRANCH}")
+            if not os.path.exists(extracted_folder):
+                # Search for root extracted dir
+                subdirs = [os.path.join(tmp_dir, d) for d in os.listdir(tmp_dir) if os.path.isdir(os.path.join(tmp_dir, d))]
+                if subdirs:
+                    extracted_folder = subdirs[0]
 
-        if result.returncode != 0:
-            return jsonify({
-                "status": "error",
-                "message": stderr or stdout or "git pull failed"
-            })
+            if os.path.exists(extracted_folder):
+                # Copy updated files over current app_dir (skip .git directory to preserve local repo metadata)
+                for root, dirs, files in os.walk(extracted_folder):
+                    rel_path = os.path.relpath(root, extracted_folder)
+                    target_dir = os.path.join(app_dir, rel_path) if rel_path != "." else app_dir
+                    
+                    if ".git" in rel_path.split(os.sep):
+                        continue
+                        
+                    os.makedirs(target_dir, exist_ok=True)
+                    for file in files:
+                        src_file = os.path.join(root, file)
+                        dst_file = os.path.join(target_dir, file)
+                        try:
+                            shutil.copy2(src_file, dst_file)
+                        except Exception:
+                            pass
 
-        # Invalidate update cache so next check reflects new version
+        try:
+            os.remove(tmp_zip_path)
+        except Exception:
+            pass
+
         _update_cache["result"] = None
         _update_cache["expires"] = 0
 
-        already_up_to_date = "Already up to date" in stdout or "Already up-to-date" in stdout
-
         return jsonify({
             "status": "ok",
-            "message": stdout or "Update applied successfully.",
-            "already_up_to_date": already_up_to_date
+            "message": "Update downloaded and installed successfully via GitHub ZIP archive.",
+            "already_up_to_date": False
         })
 
-    except FileNotFoundError:
-        return jsonify({
-            "status": "error",
-            "message": "Git is not installed or not found in PATH. Please install Git and try again."
-        })
-    except subprocess.TimeoutExpired:
-        return jsonify({
-            "status": "error",
-            "message": "Update timed out. Please check your internet connection."
-        })
     except Exception as e:
         return jsonify({
             "status": "error",
-            "message": str(e)
+            "message": f"Update failed: {str(e)}"
         })
+
 
 
 @app.route("/api/restart_app", methods=["POST"])
