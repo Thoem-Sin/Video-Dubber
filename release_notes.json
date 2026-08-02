@@ -1,0 +1,39 @@
+{
+  "1.2.3": {
+    "date": "2026-08-02",
+    "notes": [
+      "In-App Auto-Updater with direct ZIP download fallback",
+      "Launch auto-detect and auto-popup update modal on startup",
+      "Studio Preferences Version & Downgrade Manager",
+      "Dark glass confirmation dialogs for version switching",
+      "Complete Version Release History with per-version changelog"
+    ]
+  },
+  "1.2.2": {
+    "date": "2026-08-01",
+    "notes": [
+      "Fixed toast alert stuck on hover — popdown resumes on mouseleave",
+      "Positioned alert toasts below top navigation bar",
+      "Smooth 60fps animations with 2-second auto-dismiss",
+      "Filtered routine update checks from Notification Bell dropdown"
+    ]
+  },
+  "1.2.1": {
+    "date": "2026-07-28",
+    "notes": [
+      "Single-line subtitle rendering for captions",
+      "Online version update checker with release notes",
+      "Improved batch processing performance",
+      "Fixed Khmer font rendering edge cases"
+    ]
+  },
+  "1.2.0": {
+    "date": "2026-07-15",
+    "notes": [
+      "Initial PRO release of AutoVideoDubber Studio",
+      "Multi-engine AI dubbing (Gemini, Groq, DeepSeek, OpenRouter)",
+      "RVC Voice Cloning & Edge-TTS integration",
+      "Hardcoded caption detection & subtitle burning"
+    ]
+  }
+}
