@@ -1839,9 +1839,9 @@
                     splash.classList.add('fade-out');
                     setTimeout(() => splash.remove(), 500);
                 }
-            }, 3000);
-            // Auto-check for updates silently on startup (after 4s delay)
-            setTimeout(() => silentCheckForUpdates(), 4500);
+            }, 2000);
+            // Auto-detect and auto-popup update modal at app launch (after splash finishes)
+            setTimeout(() => autoCheckAndPopupOnLaunch(), 2600);
         });
 
         /* ─── Online Update Feature ─────────────────────────────────────── */
@@ -1856,11 +1856,11 @@
                 .then(data => {
                     _updateData = data;
                     if (data.has_update) {
-                        // Popup the dialog ONLY when an update is available
+                        // Popup dialog when an update is available
                         document.getElementById('updateModalBackdrop').classList.remove('hidden');
                         renderUpdateResult(data);
                     } else {
-                        // Don't popup dialog, just show alert message!
+                        // Don't popup dialog, just show alert message if user clicked manually
                         document.getElementById('updateModalBackdrop').classList.add('hidden');
                         if (typeof showToast === 'function') {
                             showToast(`✅ You are running the latest version (v${data.current_version || '1.0.0'})`, 'success');
@@ -1903,12 +1903,16 @@
                     dlBtn.href = data.download_url;
                     dlBtn.classList.remove('hidden');
                 }
-                document.getElementById('updateBadgeDot').style.display = 'block';
+                if (document.getElementById('updateBadgeDot')) {
+                    document.getElementById('updateBadgeDot').style.display = 'block';
+                }
             } else {
                 latestChip.classList.remove('highlight');
                 document.getElementById('updateModalTitle').textContent = 'Software Up to Date';
                 dlBtn.classList.add('hidden');
-                document.getElementById('updateBadgeDot').style.display = 'none';
+                if (document.getElementById('updateBadgeDot')) {
+                    document.getElementById('updateBadgeDot').style.display = 'none';
+                }
             }
 
             // Format itemized release notes
@@ -1935,15 +1939,21 @@
             }).join('');
         }
 
-        function silentCheckForUpdates() {
-            // Silent background update check — only shows badge if update found
+        function autoCheckAndPopupOnLaunch() {
+            // Auto detect & auto popup update modal at app launch if a new update is found
             fetch('/api/check_update')
                 .then(r => r.json())
                 .then(data => {
                     _updateData = data;
                     if (data.has_update) {
-                        document.getElementById('updateBadgeDot').style.display = 'block';
-                        document.getElementById('updateBadgeLabel').textContent = 'Update!';
+                        document.getElementById('updateModalBackdrop').classList.remove('hidden');
+                        renderUpdateResult(data);
+                        if (document.getElementById('updateBadgeDot')) {
+                            document.getElementById('updateBadgeDot').style.display = 'block';
+                        }
+                        if (document.getElementById('updateBadgeLabel')) {
+                            document.getElementById('updateBadgeLabel').textContent = 'Update!';
+                        }
                     }
                 })
                 .catch(() => {});
