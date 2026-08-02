@@ -1,5 +1,5 @@
-• Fixed toast alert stuck on hover — popdown resumes after mouseleave
-• Toast alerts now display below header bar (no overlap)
-• Smoother 60fps alert animations with 2s auto-dismiss
-• Notification bell no longer logs routine update checks
-• Update check now uses version.txt (reliable, no API rate limits)
+- Fixed toast alert stuck on hover — popdown resumes after mouseleave
+- Toast alerts now display below header bar (no overlap)
+- Smoother 60fps alert animations with 2s auto-dismiss
+- Notification bell no longer logs routine update checks
+- Update check now uses version.txt (reliable, no API rate limits)
