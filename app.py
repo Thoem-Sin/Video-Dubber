@@ -254,8 +254,11 @@ def install_update():
     # 2. Try git pull if git executable is found
     if git_cmd:
         try:
+            # Restore local version.txt if modified so git pull does not get blocked by dirty working copy
+            subprocess.run([git_cmd, "checkout", "--", "version.txt"], cwd=app_dir, capture_output=True, timeout=10)
+
             result = subprocess.run(
-                [git_cmd, "pull", "origin", GITHUB_BRANCH, "--ff-only"],
+                [git_cmd, "pull", "origin", GITHUB_BRANCH],
                 cwd=app_dir,
                 capture_output=True,
                 text=True,
@@ -268,11 +271,13 @@ def install_update():
             if result.returncode == 0:
                 _update_cache["result"] = None
                 _update_cache["expires"] = 0
+                new_ver = get_app_version()
                 already_up_to_date = "Already up to date" in stdout or "Already up-to-date" in stdout
                 return jsonify({
                     "status": "ok",
                     "message": stdout or "Update applied successfully.",
-                    "already_up_to_date": already_up_to_date
+                    "already_up_to_date": already_up_to_date,
+                    "new_version": new_ver
                 })
         except Exception:
             pass  # Fallback to ZIP download below if git pull encounters issues
@@ -325,11 +330,13 @@ def install_update():
 
         _update_cache["result"] = None
         _update_cache["expires"] = 0
+        new_ver = get_app_version()
 
         return jsonify({
             "status": "ok",
             "message": "Update downloaded and installed successfully via GitHub ZIP archive.",
-            "already_up_to_date": False
+            "already_up_to_date": False,
+            "new_version": new_ver
         })
 
     except Exception as e:

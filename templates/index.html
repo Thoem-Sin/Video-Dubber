@@ -2068,11 +2068,32 @@
         function closeIpd() {
             document.getElementById('ipdBackdrop').classList.add('hidden');
         }
-        function ipdShowSuccess(alreadyUpToDate) {
+        function ipdShowSuccess(alreadyUpToDate, newVer) {
             document.getElementById('ipdStateProcessing').classList.add('hidden');
             document.getElementById('ipdStateError').classList.add('hidden');
             document.getElementById('ipdSuccessTitle').textContent = alreadyUpToDate ? 'Already Up to Date' : 'Update Installed!';
             document.getElementById('ipdStateSuccess').classList.remove('hidden');
+
+            if (newVer) {
+                if (document.getElementById('uiCurrentVer')) {
+                    document.getElementById('uiCurrentVer').textContent = 'v' + newVer;
+                }
+                if (document.getElementById('uiLatestVer')) {
+                    document.getElementById('uiLatestVer').textContent = 'v' + newVer;
+                }
+                if (document.getElementById('uiLatestChip')) {
+                    document.getElementById('uiLatestChip').classList.remove('highlight');
+                }
+                if (document.getElementById('updateBadgeDot')) {
+                    document.getElementById('updateBadgeDot').style.display = 'none';
+                }
+                if (document.getElementById('updateModalTitle')) {
+                    document.getElementById('updateModalTitle').textContent = 'Software Up to Date';
+                }
+                if (document.getElementById('uiDownloadBtn')) {
+                    document.getElementById('uiDownloadBtn').classList.add('hidden');
+                }
+            }
         }
         function ipdShowError(msg) {
             document.getElementById('ipdStateProcessing').classList.add('hidden');
@@ -2091,7 +2112,7 @@
                 .then(r => r.json())
                 .then(res => {
                     if (res.status === 'ok') {
-                        ipdShowSuccess(res.already_up_to_date);
+                        ipdShowSuccess(res.already_up_to_date, res.new_version);
                     } else {
                         ipdShowError(res.message || 'Update failed.');
                     }
