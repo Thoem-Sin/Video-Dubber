@@ -1,7 +1,7 @@
 // main.js - Video Dubber Client Logic
 
 // ─── Modern Toast Notification System ───────────────────────────────────────
-function showToast(message, type = 'info', duration = 2800) {
+function showToast(message, type = 'info', duration = 2000) {
     if (!message) return;
     
     // Strip duplicate leading emojis to avoid double icon display
@@ -31,7 +31,9 @@ function showToast(message, type = 'info', duration = 2800) {
 
     container.appendChild(toast);
 
-    setTimeout(() => toast.classList.add('show'), 10);
+    requestAnimationFrame(() => {
+        toast.classList.add('show');
+    });
 
     const timer = setTimeout(() => {
         dismissToast(toast);
@@ -41,13 +43,15 @@ function showToast(message, type = 'info', duration = 2800) {
 }
 
 function dismissToast(toastEl) {
-    if (!toastEl) return;
+    if (!toastEl || toastEl.isDismissing) return;
+    toastEl.isDismissing = true;
     toastEl.classList.remove('show');
     toastEl.classList.add('popdown');
     setTimeout(() => {
         if (toastEl.parentElement) toastEl.remove();
-    }, 300);
+    }, 260);
 }
+
 
 
 // ─── Notification Icon Bar System ───────────────────────────────────────────
