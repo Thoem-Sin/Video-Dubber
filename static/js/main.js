@@ -1,9 +1,13 @@
 // main.js - Video Dubber Client Logic
 
 // ─── Modern Toast Notification System ───────────────────────────────────────
-function showToast(message, type = 'info', duration = 3500) {
+function showToast(message, type = 'info', duration = 2800) {
     if (!message) return;
-    addNotification(message, type);
+    
+    // Strip duplicate leading emojis to avoid double icon display
+    const cleanMsg = message.replace(/^[\s✅🔍⚠️❌✏️🗑️🔄✨📌⚡💡]+/, '').trim();
+    
+    addNotification(cleanMsg || message, type);
     let container = document.getElementById('toastContainer');
     if (!container) {
         container = document.createElement('div');
@@ -21,8 +25,8 @@ function showToast(message, type = 'info', duration = 3500) {
 
     toast.innerHTML = `
         <div class="toast-icon"><i class="fa-solid ${iconClass}"></i></div>
-        <div class="toast-text">${message}</div>
-        <div class="toast-close" onclick="this.parentElement.remove()"><i class="fa-solid fa-xmark"></i></div>
+        <div class="toast-text">${cleanMsg || message}</div>
+        <div class="toast-close" onclick="dismissToast(this.parentElement)"><i class="fa-solid fa-xmark"></i></div>
     `;
 
     container.appendChild(toast);
@@ -30,12 +34,21 @@ function showToast(message, type = 'info', duration = 3500) {
     setTimeout(() => toast.classList.add('show'), 10);
 
     const timer = setTimeout(() => {
-        toast.classList.remove('show');
-        setTimeout(() => toast.remove(), 350);
+        dismissToast(toast);
     }, duration);
 
     toast.addEventListener('mouseenter', () => clearTimeout(timer));
 }
+
+function dismissToast(toastEl) {
+    if (!toastEl) return;
+    toastEl.classList.remove('show');
+    toastEl.classList.add('popdown');
+    setTimeout(() => {
+        if (toastEl.parentElement) toastEl.remove();
+    }, 300);
+}
+
 
 // ─── Notification Icon Bar System ───────────────────────────────────────────
 let notificationHistory = [];
