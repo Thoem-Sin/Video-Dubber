@@ -1,0 +1,30 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+env/
+venv/
+ENV/
+
+# C# / .NET
+bin/
+obj/
+*.user
+*.suo
+*.userosv
+.vs/
+
+# Video Dubber App specific output and temporary files
+outputs/*
+!outputs/.gitkeep
+uploads/*
+!uploads/.gitkeep
+user_config.json
+*.log
+
+# IDE & System
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

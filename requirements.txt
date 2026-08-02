@@ -1,0 +1,11 @@
+flask>=3.0.0
+flask-cors>=4.0.0
+gunicorn>=21.2.0
+edge-tts>=6.1.9
+deep-translator>=1.11.4
+openai-whisper
+torch
+torchaudio
+pillow>=10.0.0
+numpy>=1.24.0
+requests>=2.31.0

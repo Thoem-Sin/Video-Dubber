@@ -1,0 +1,1869 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AutoVideoDubber Studio - YouTube Style Video Dubbing</title>
+    <link rel="icon"
+        href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🪄</text></svg>">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Kantumruy+Pro:ital,wght@0,300..700;1,300..700&family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/static/css/style.css">
+    <style>
+        html, body {
+            height: 100vh !important;
+            max-height: 100vh !important;
+            width: 100vw !important;
+            max-width: 100vw !important;
+            overflow: hidden !important;
+            margin: 0 !important;
+            padding: 0 !important;
+        }
+        #appLaunchSplash {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background-color: #0b0f19;
+            z-index: 999999;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            transition: opacity 0.5s cubic-bezier(0.4, 0, 0.2, 1), visibility 0.5s ease;
+        }
+        #appLaunchSplash.fade-out {
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+        }
+        .splash-card {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            gap: 16px;
+            padding: 32px 48px;
+            border-radius: 20px;
+            background: rgba(17, 24, 39, 0.75);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(16px);
+        }
+        .splash-icon-box {
+            position: relative;
+            width: 76px;
+            height: 76px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .splash-spinner {
+            position: absolute;
+            inset: 0;
+            border-radius: 50%;
+            border: 3.5px solid rgba(99, 102, 241, 0.15);
+            border-top-color: #6366f1;
+            border-right-color: #8b5cf6;
+            animation: splash-spin 0.9s linear infinite;
+        }
+        .splash-icon {
+            font-size: 30px;
+            color: #8b5cf6;
+            filter: drop-shadow(0 0 14px rgba(139, 92, 246, 0.8));
+            animation: splash-pulse 1.8s ease-in-out infinite;
+        }
+        .splash-title {
+            color: #f3f4f6;
+            font-size: 20px;
+            font-weight: 800;
+            letter-spacing: -0.3px;
+            margin: 0;
+            font-family: 'Inter', system-ui, sans-serif;
+        }
+        .splash-brand-highlight {
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .splash-sub {
+            color: #9ca3af;
+            font-size: 13px;
+            margin: 0;
+            font-weight: 400;
+            font-family: 'Inter', system-ui, sans-serif;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .splash-dots span {
+            animation: splash-dot-blink 1.4s infinite both;
+        }
+        .splash-dots span:nth-child(2) { animation-delay: .2s; }
+        .splash-dots span:nth-child(3) { animation-delay: .4s; }
+        @keyframes splash-spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        @keyframes splash-pulse {
+            0%, 100% { transform: scale(1); opacity: 0.9; }
+            50% { transform: scale(1.15); opacity: 1; filter: drop-shadow(0 0 22px rgba(139, 92, 246, 1)); }
+        }
+        @keyframes splash-dot-blink {
+            0% { opacity: .2; }
+            20% { opacity: 1; }
+            100% { opacity: .2; }
+        }
+
+        /* ─── Update Feature Styles ───────────────────────────────────────── */
+        .update-check-btn {
+            position: relative;
+        }
+        .update-badge-dot {
+            position: absolute;
+            top: 6px;
+            right: 6px;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #a78bfa, #6366f1);
+            box-shadow: 0 0 6px 2px rgba(139,92,246,0.7);
+            animation: updateBadgePulse 1.8s ease-in-out infinite;
+        }
+        @keyframes updateBadgePulse {
+            0%, 100% { box-shadow: 0 0 6px 2px rgba(139,92,246,0.7); }
+            50% { box-shadow: 0 0 14px 5px rgba(139,92,246,1); }
+        }
+        .update-modal-card {
+            max-width: 480px;
+            width: 94%;
+            padding: 0;
+            border-radius: 20px;
+            overflow: hidden;
+            animation: updateModalIn 0.3s cubic-bezier(0.34,1.56,0.64,1);
+        }
+        @keyframes updateModalIn {
+            from { opacity: 0; transform: scale(0.88) translateY(20px); }
+            to   { opacity: 1; transform: scale(1) translateY(0); }
+        }
+        .update-modal-header {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 22px 24px 16px;
+            border-bottom: 1px solid rgba(255,255,255,0.07);
+            position: relative;
+        }
+        .update-modal-icon-wrap {
+            width: 46px;
+            height: 46px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            flex-shrink: 0;
+            background: linear-gradient(135deg, rgba(99,102,241,0.2), rgba(139,92,246,0.25));
+            border: 1px solid rgba(139,92,246,0.3);
+            color: #a78bfa;
+            transition: background 0.3s, color 0.3s;
+        }
+        .update-modal-icon-wrap.has-update {
+            background: linear-gradient(135deg, rgba(16,185,129,0.15), rgba(5,150,105,0.2));
+            border-color: rgba(16,185,129,0.35);
+            color: #34d399;
+        }
+        .update-modal-title {
+            margin: 0;
+            font-size: 16px;
+            font-weight: 700;
+            color: #f3f4f6;
+        }
+        .update-modal-subtitle {
+            margin: 0;
+            font-size: 12px;
+            color: #6b7280;
+        }
+        .modal-close-x {
+            position: absolute;
+            top: 14px;
+            right: 16px;
+            background: none;
+            border: none;
+            color: #6b7280;
+            font-size: 22px;
+            cursor: pointer;
+            line-height: 1;
+            transition: color 0.2s;
+        }
+        .modal-close-x:hover { color: #f3f4f6; }
+        .update-modal-body {
+            padding: 22px 24px;
+            min-height: 120px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+        .update-checking-state {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: #9ca3af;
+            font-size: 14px;
+        }
+        .update-spinner {
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            border: 3px solid rgba(99,102,241,0.2);
+            border-top-color: #6366f1;
+            animation: splash-spin 0.8s linear infinite;
+            flex-shrink: 0;
+        }
+        .update-result-state {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+        .update-version-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .update-version-chip {
+            flex: 1;
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 12px;
+            padding: 10px 14px;
+            text-align: center;
+        }
+        .update-version-chip.latest.new-avail {
+            background: rgba(16,185,129,0.08);
+            border-color: rgba(16,185,129,0.3);
+        }
+        .update-ver-label {
+            display: block;
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: #6b7280;
+            margin-bottom: 4px;
+        }
+        .update-ver-val {
+            display: block;
+            font-size: 18px;
+            font-weight: 700;
+            color: #e5e7eb;
+            font-family: 'JetBrains Mono', monospace;
+        }
+        .update-arrow {
+            color: #4b5563;
+            font-size: 14px;
+            flex-shrink: 0;
+        }
+        .update-status-banner {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px 16px;
+            border-radius: 10px;
+            background: rgba(16,185,129,0.08);
+            border: 1px solid rgba(16,185,129,0.2);
+            color: #34d399;
+            font-size: 13px;
+            font-weight: 500;
+        }
+        .update-status-banner.needs-update {
+            background: rgba(245,158,11,0.08);
+            border-color: rgba(245,158,11,0.25);
+            color: #fbbf24;
+        }
+        .update-notes-box {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.07);
+            border-radius: 10px;
+            padding: 12px 14px;
+        }
+        .update-notes-label {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.07em;
+            color: #6b7280;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .update-notes-content {
+            font-size: 13px;
+            color: #d1d5db;
+            line-height: 1.55;
+            white-space: pre-wrap;
+        }
+        .update-modal-footer {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 14px 24px 20px;
+            border-top: 1px solid rgba(255,255,255,0.06);
+        }
+        .update-dl-btn {
+            background: linear-gradient(135deg, #10b981, #059669) !important;
+            border-color: transparent !important;
+        }
+        .update-dl-btn:hover {
+            background: linear-gradient(135deg, #34d399, #10b981) !important;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Launch Loading Splash Overlay -->
+    <div id="appLaunchSplash">
+        <div class="splash-card">
+            <div class="splash-icon-box">
+                <div class="splash-spinner"></div>
+                <i class="fa-solid fa-wand-magic-sparkles splash-icon"></i>
+            </div>
+            <h2 class="splash-title">AutoVideo<span class="splash-brand-highlight">Dubber</span> Studio</h2>
+            <p class="splash-sub">Loading application resources<span class="splash-dots"><span>.</span><span>.</span><span>.</span></span></p>
+        </div>
+    </div>
+    <div class="app-container">
+        <!-- Header / Navbar -->
+        <header class="navbar">
+            <div class="brand">
+                <div class="brand-icon">
+                    <i class="fa-solid fa-wand-magic-sparkles"></i>
+                </div>
+                <div class="brand-text">
+                    <h1>AutoVideo<span class="brand-highlight">Dubber</span> <span class="badge">PRO</span></h1>
+                </div>
+            </div>
+
+            <div class="header-actions">
+                <div class="app-mode-tabs">
+                    <button class="mode-tab-btn active" id="modeSingleBtn" onclick="switchAppMode('single')"
+                        title="Single Studio">
+                        <i class="fa-solid fa-video"></i>
+                    </button>
+                    <button class="mode-tab-btn" id="modeBatchBtn" onclick="switchAppMode('batch')"
+                        title="Batch Processing">
+                        <i class="fa-solid fa-layer-group"></i> <span class="badge" id="batchCountBadge"
+                            style="display:none;">0</span>
+                    </button>
+                </div>
+                <button class="btn btn-secondary" onclick="openPreferencesModal()">
+                    <i class="fa-solid fa-sliders"></i> Preferences
+                </button>
+                <!-- Updates Button -->
+                <button class="btn btn-secondary update-check-btn" id="updateCheckBtn" onclick="openUpdateModal()" title="Check for Updates">
+                    <i class="fa-solid fa-arrow-up-from-bracket"></i>
+                    <span id="updateBadgeLabel">Updates</span>
+                    <span class="update-badge-dot" id="updateBadgeDot" style="display:none;"></span>
+                </button>
+                <div class="header-status">
+                    <span class="status-indicator online"></span>
+                    <span>AI Engine Ready</span>
+                </div>
+                <!-- Notification Icon Bar -->
+                <div class="notification-bar-wrapper">
+                    <button class="notification-btn" id="notificationBtn" onclick="toggleNotificationDropdown(event)" title="Notifications">
+                        <i class="fa-solid fa-bell"></i>
+                        <span class="notification-dot" id="notificationDot" style="display: none;"></span>
+                    </button>
+                    <!-- Notification Dropdown Menu -->
+                    <div class="notification-dropdown glass hidden" id="notificationDropdown">
+                        <div class="notification-dropdown-header">
+                            <span><i class="fa-solid fa-bell text-primary"></i> Notifications</span>
+                            <button class="notification-clear-btn" onclick="clearNotifications(event)">Clear All</button>
+                        </div>
+                        <div class="notification-dropdown-body" id="notificationList">
+                            <div class="notification-empty">
+                                <i class="fa-regular fa-bell-slash"></i>
+                                <p>No new notifications</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- ─── Update Modal ────────────────────────────────────────────── -->
+        <div class="modal-backdrop hidden" id="updateModalBackdrop" onclick="closeUpdateModal(event)">
+            <div class="modal-card update-modal-card glass" id="updateModalCard">
+                <div class="update-modal-header">
+                    <div class="update-modal-icon-wrap" id="updateModalIconWrap">
+                        <i class="fa-solid fa-arrow-up-from-bracket" id="updateModalIcon"></i>
+                    </div>
+                    <div>
+                        <h3 class="update-modal-title" id="updateModalTitle">Check for Updates</h3>
+                        <p class="update-modal-subtitle" id="updateModalSubtitle">AutoVideoDubber Studio PRO</p>
+                    </div>
+                    <button class="modal-close-x" onclick="closeUpdateModal()" title="Close">&times;</button>
+                </div>
+                <div class="update-modal-body" id="updateModalBody">
+                    <div class="update-checking-state" id="updateCheckingState">
+                        <div class="update-spinner"></div>
+                        <span>Checking for updates online<span class="splash-dots"><span>.</span><span>.</span><span>.</span></span></span>
+                    </div>
+                    <div class="update-result-state hidden" id="updateResultState">
+                        <div class="update-version-row">
+                            <div class="update-version-chip current">
+                                <span class="update-ver-label">Current</span>
+                                <span class="update-ver-val" id="uiCurrentVer">—</span>
+                            </div>
+                            <i class="fa-solid fa-arrow-right update-arrow"></i>
+                            <div class="update-version-chip latest" id="uiLatestChip">
+                                <span class="update-ver-label">Latest</span>
+                                <span class="update-ver-val" id="uiLatestVer">—</span>
+                            </div>
+                        </div>
+                        <div class="update-status-banner" id="uiUpdateBanner">
+                            <i class="fa-solid fa-circle-check" id="uiUpdateBannerIcon"></i>
+                            <span id="uiUpdateBannerText">You are on the latest version.</span>
+                        </div>
+                        <div class="update-notes-box" id="uiReleaseNotesBox" style="display:none;">
+                            <div class="update-notes-label"><i class="fa-solid fa-scroll"></i> Release Notes</div>
+                            <div class="update-notes-content" id="uiReleaseNotes"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="update-modal-footer">
+                    <button class="btn btn-secondary" onclick="closeUpdateModal()">Close</button>
+                    <a class="btn btn-primary update-dl-btn hidden" id="uiDownloadBtn" href="#" target="_blank">
+                        <i class="fa-solid fa-download"></i> Download Update
+                    </a>
+                    <button class="btn btn-secondary" id="uiReCheckBtn" onclick="runUpdateCheck()" style="margin-left:auto;">
+                        <i class="fa-solid fa-rotate-right"></i> Re-check
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <main class="main-content">
+            <!-- Hidden file input used for JS-triggered file picking -->
+            <input type="file" id="videoFileInput" accept="video/*" class="file-input" style="display:none;">
+
+            <!-- Progress Popup Modal -->
+            <div class="progress-modal-backdrop hidden" id="progressSection">
+                <div class="progress-modal-card glass">
+                    <div class="spinner-container">
+                        <div class="pulse-ring"></div>
+                        <i class="fa-solid fa-wand-magic-sparkles spinner-icon"></i>
+                    </div>
+
+                    <h3 id="progressTitle">Processing...</h3>
+                    <p id="progressMessage" class="progress-sub">Initializing...</p>
+
+                    <!-- Steps Timeline -->
+                    <div class="steps-timeline">
+                        <div class="step-item" id="step_extract_audio">
+                            <div class="step-circle"><i class="fa-solid fa-music"></i></div>
+                            <span>Audio</span>
+                        </div>
+                        <div class="step-item" id="step_transcribe">
+                            <div class="step-circle"><i class="fa-solid fa-quote-left"></i></div>
+                            <span>Whisper AI</span>
+                        </div>
+                        <div class="step-item" id="step_translate">
+                            <div class="step-circle"><i class="fa-solid fa-globe"></i></div>
+                            <span>Translate</span>
+                        </div>
+                        <div class="step-item" id="step_tts_synthesis">
+                            <div class="step-circle"><i class="fa-solid fa-microchip"></i></div>
+                            <span>Neural Voice</span>
+                        </div>
+                        <div class="step-item" id="step_merge_video">
+                            <div class="step-circle"><i class="fa-solid fa-video"></i></div>
+                            <span>Video Merge</span>
+                        </div>
+                    </div>
+
+                    <!-- Progress Bar -->
+                    <div class="progress-bar-wrapper">
+                        <div class="progress-bar" id="progressBar" style="width: 0%;"></div>
+                    </div>
+                    <div class="progress-percentage" id="progressPercent">0%</div>
+
+                    <!-- Cancel Action Button -->
+                    <div style="margin-top: 10px; text-align: center;">
+                        <button type="button" class="btn btn-secondary btn-sm" onclick="cancelProcessingJob()"
+                            style="padding: 4px 14px; border-radius: 6px; font-size: 11.5px;">
+                            <i class="fa-solid fa-xmark"></i> Cancel Process
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Output & Studio Section (Visible on Main Dashboard at First Launch) -->
+            <section class="panel studio-panel" id="studioSection">
+                <div class="grid-2col">
+                    <!-- Left: Video Player Column -->
+                    <div class="player-card">
+                        <!-- Drop-zone + Video Player area with Real-time Live Canvas Overlays -->
+                        <div class="video-drop-zone" id="videoDropZone" style="position: relative; overflow: hidden;">
+                            <!-- Placeholder shown before any video is loaded -->
+                            <div class="video-placeholder" id="videoPlaceholder">
+                                <svg class="placeholder-icon" viewBox="0 0 80 80" fill="none"
+                                    xmlns="http://www.w3.org/2000/svg">
+                                    <rect x="6" y="14" width="52" height="40" rx="5" stroke="#6366f1" stroke-width="3"
+                                        fill="none" />
+                                    <path d="M58 30l14-8v28l-14-8V30z" stroke="#6366f1" stroke-width="3"
+                                        stroke-linejoin="round" fill="none" />
+                                    <circle cx="22" cy="28" r="5" stroke="#6366f1" stroke-width="2.5" fill="none" />
+                                    <path d="M6 44l14-12 10 10 8-6 14 12" stroke="#6366f1" stroke-width="2.5"
+                                        stroke-linejoin="round" fill="none" />
+                                </svg>
+                                <p class="placeholder-title">Double-click to open video</p>
+                                <p class="placeholder-sub">or drag &amp; drop a file <span class="drop-link">here</span>
+                                </p>
+                            </div>
+
+                            <!-- Hidden video element (shown after file is loaded) -->
+                            <video id="outputVideoPlayer" crossorigin="anonymous" class="hidden">
+                                <source id="videoSource" src="" type="video/mp4">
+                                <track id="subtitleTrack" kind="subtitles" srclang="km" label="Subtitles">
+                            </video>
+
+                            <!-- Real-time Live Canvas Overlays on Player -->
+                            <div id="liveBlurOverlay" class="live-blur-overlay hidden"></div>
+                            <div id="liveTextOverlay" class="live-text-overlay hidden"></div>
+                            <div id="liveLogoOverlay" class="live-logo-overlay hidden"><img id="liveLogoImg" src=""
+                                    alt="logo"></div>
+                            <div id="liveSubOverlay" class="live-sub-overlay hidden"
+                                style="position:absolute; inset:0; width:100%; height:100%; pointer-events:none; z-index:10;">
+                                <img id="liveSubOverlayImg" src="" alt="sub_overlay"
+                                    style="width:100%; height:100%; object-fit:contain; pointer-events:none; display:block;">
+                            </div>
+
+                            <!-- Floating round Close Button (Top-Right of Video) -->
+                            <button class="video-overlay-close hidden" id="videoOverlayClose"
+                                onclick="clearVideoPreview()" title="Remove video">
+                                <i class="fa-solid fa-xmark"></i>
+                            </button>
+                        </div>
+
+                        <!-- Custom Video Controls Bar -->
+                        <div class="player-controls" id="playerControls">
+                            <button class="ctrl-btn" id="playPauseBtn" onclick="togglePlayPause()" title="Play / Pause">
+                                <i class="fa-solid fa-play" id="playIcon"></i>
+                            </button>
+                            <input type="range" class="video-scrubber" id="videoScrubber" min="0" max="100" value="0"
+                                step="0.1">
+                            <span class="time-display" id="timeDisplay">00:00 / 00:00</span>
+                        </div>
+
+                        <!-- Merged Unified Action Button (Transcribe -> Auto-Dub / Movie Recap) -->
+                        <button class="btn btn-primary btn-large btn-glow btn-block margin-top-xs"
+                            id="unifiedProcessBtn" onclick="handleUnifiedProcessClick()" disabled
+                            style="opacity: 0.45; cursor: not-allowed; pointer-events: none;">
+                            Transcript
+                        </button>
+                    </div>
+
+                    <!-- Right: Video Customization & Overlay Studio -->
+                    <div class="card glass editor-card">
+                        <!-- Main Studio Header Bar -->
+                        <div class="main-tab-bar">
+                            <button class="main-tab-btn active" id="tabBtnTranscript"
+                                onclick="switchMainTab('transcript')">
+                                <i class="fa-solid fa-closed-captioning"></i> Transcript Lab
+                            </button>
+                            <button class="main-tab-btn" id="tabBtnCustomization"
+                                onclick="switchMainTab('customization')">
+                                <i class="fa-solid fa-palette"></i> Editor Lab
+                            </button>
+                        </div>
+
+                        <div class="main-tab-content" id="mainTabContent">
+                            <!-- MAIN TAB 1: Transcript & Subtitles -->
+                            <div class="main-panel active" id="mainPanelTranscript">
+                                <div class="transcript-action-bar" id="transcriptActionBar"
+                                    style="display: flex; gap: 8px; margin-bottom: 4px; align-items: center; justify-content: space-between; padding: 0 2px;">
+                                    <div style="display: flex; gap: 8px; align-items: center;">
+                                        <button class="btn btn-secondary btn-sm" onclick="triggerImportSRT()"
+                                            title="Import external .srt file">
+                                            <i class="fa-solid fa-file-import"></i> Import SRT
+                                        </button>
+                                        <button class="btn btn-secondary btn-sm" onclick="exportCurrentSRT()"
+                                            title="Export subtitles as .srt file">
+                                            <i class="fa-solid fa-file-export"></i> Export SRT
+                                        </button>
+                                        <input type="file" id="srtFileInput" accept=".srt" style="display:none;"
+                                            onchange="handleImportSRTFile(this)">
+                                    </div>
+                                    <span id="transcriptSegCount" class="text-muted text-xs"></span>
+                                </div>
+
+                                <div class="transcript-scroll" id="transcriptScroll">
+                                    <div class="empty-transcript-placeholder" id="emptyTranscriptPlaceholder">
+                                        <i class="fa-solid fa-comments"></i>
+                                        <p>Select a video file, then click <strong>"Transcribe Audio First"</strong>
+                                            below the preview player to extract script segments.</p>
+                                    </div>
+                                    <div class="segments-list hidden" id="segmentsList">
+                                        <!-- Dynamically populated from JS -->
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- MAIN TAB 2: Video Customization & Overlay Studio -->
+                            <div class="main-panel" id="mainPanelCustomization">
+                                <!-- Global Editing Presets Control Bar -->
+                                <div class="preset-control-bar" style="padding: 10px 14px; margin-bottom: 12px; background: rgba(255,255,255,0.03); border: 1px solid var(--border-color); border-radius: 10px; display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap;">
+                                    <div style="display: flex; align-items: center; gap: 8px; flex: 1; min-width: 240px;">
+                                        <i class="fa-solid fa-bookmark" style="color: var(--primary-light); font-size: 14px;"></i>
+                                        <span style="font-weight: 600; font-size: 13px; color: #fff; white-space: nowrap;">Preset:</span>
+                                        <select id="globalPresetSelect" class="select-input" style="flex: 1; height: 32px; font-size: 12.5px; padding: 0 10px;" onchange="applyGlobalPreset(this.value)">
+                                            <!-- Dynamically populated by JS -->
+                                        </select>
+                                    </div>
+                                    <div style="display: flex; align-items: center; gap: 6px;">
+                                        <button type="button" class="preset-btn btn btn-secondary btn-xs" onclick="saveCurrentEditingPreset()" title="Save current settings as new preset">
+                                            <i class="fa-solid fa-plus"></i> New
+                                        </button>
+                                        <button type="button" class="preset-btn btn btn-secondary btn-xs" onclick="renameGlobalPreset()" title="Rename selected preset">
+                                            <i class="fa-solid fa-pen-to-square"></i> Rename
+                                        </button>
+                                        <button type="button" class="preset-btn btn btn-secondary btn-xs" onclick="updateGlobalPreset()" title="Update selected preset with current settings">
+                                            <i class="fa-solid fa-rotate"></i> Update
+                                        </button>
+                                        <button type="button" class="preset-btn btn btn-secondary btn-xs" onclick="deleteGlobalPreset()" title="Delete selected preset">
+                                            <i class="fa-solid fa-trash-can"></i> Delete
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <!-- 100% Reference Exact 9-Icon Tab Bar -->
+                                <div class="studio-tab-bar">
+                                    <button class="studio-tab-btn" onclick="switchStudioTab('mirror')"
+                                        title="Mirror Video (Flip)">
+                                        <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor"
+                                            stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M7 4H5a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h2" />
+                                            <path d="M17 4h2a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-2" />
+                                            <line x1="12" y1="6" x2="12" y2="18" stroke-dasharray="3 3" />
+                                        </svg>
+                                    </button>
+                                    <button class="studio-tab-btn active" onclick="switchStudioTab('blur')"
+                                        title="Blur Box">
+                                        <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor"
+                                            stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                                            <rect x="4" y="4" width="16" height="16" rx="3" />
+                                            <rect x="8.5" y="8.5" width="2.5" height="2.5" fill="currentColor" />
+                                            <rect x="13" y="8.5" width="2.5" height="2.5" fill="currentColor" />
+                                            <rect x="8.5" y="13" width="2.5" height="2.5" fill="currentColor" />
+                                            <rect x="13" y="13" width="2.5" height="2.5" fill="currentColor" />
+                                        </svg>
+                                    </button>
+                                    <button class="studio-tab-btn" onclick="switchStudioTab('subtitles')"
+                                        title="Burn-in Subtitles">
+                                        <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor"
+                                            stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                                            <line x1="7" y1="8" x2="15" y2="8" />
+                                            <line x1="7" y1="12" x2="17" y2="12" />
+                                        </svg>
+                                    </button>
+                                    <button class="studio-tab-btn" onclick="switchStudioTab('text')"
+                                        title="Text Overlay">
+                                        <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor"
+                                            stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M4 7V4h16v3" />
+                                            <line x1="12" y1="4" x2="12" y2="20" />
+                                            <line x1="9" y1="20" x2="15" y2="20" />
+                                        </svg>
+                                    </button>
+                                    <button class="studio-tab-btn" onclick="switchStudioTab('logo')"
+                                        title="Logo Watermark">
+                                        <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor"
+                                            stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                                            <rect x="3" y="3" width="18" height="18" rx="3" />
+                                            <circle cx="8.5" cy="8.5" r="1.5" />
+                                            <polyline points="21 15 16 10 5 21" />
+                                        </svg>
+                                    </button>
+                                    <button class="studio-tab-btn" onclick="switchStudioTab('pip')"
+                                        title="Video Overlay (PIP)">
+                                        <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor"
+                                            stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                                            <rect x="2" y="6" width="14" height="12" rx="3" />
+                                            <path d="M16 11l6-4v10l-6-4z" />
+                                        </svg>
+                                    </button>
+                                    <button class="studio-tab-btn" onclick="switchStudioTab('color')"
+                                        title="Color Adjustment">
+                                        <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor"
+                                            stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                                            <circle cx="12" cy="12" r="10" />
+                                            <path d="M12 2a10 10 0 0 0 0 20z" fill="currentColor" />
+                                        </svg>
+                                    </button>
+                                </div>
+
+                                <div class="editor-controls-scroll">
+                                    <!-- TAB 1: Mirror Video (Horizontal Flip) -->
+                                    <div class="tab-panel" id="panelMirror">
+                                        <div class="toggle-row">
+                                            <span class="toggle-title">Mirror Video (Flip)</span>
+                                            <label class="switch-toggle">
+                                                <input type="checkbox" id="mirrorToggle"
+                                                    onchange="updateLivePreviewOverlays()">
+                                                <span class="slider-round"></span>
+                                            </label>
+                                        </div>
+                                        <p class="toggle-sub">Flip video horizontally (left-to-right mirror effect)</p>
+                                        <hr class="panel-divider">
+                                        <div class="form-group margin-top-sm">
+                                            <label>Mirror Direction</label>
+                                            <div class="btn-group">
+                                                <button class="btn btn-secondary btn-sm active"
+                                                    id="mirrorHBtn">Horizontal Flip</button>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- TAB 2: Blur Box (Screenshot 1) -->
+                                    <div class="tab-panel active" id="panelBlur">
+                                        <div class="toggle-row">
+                                            <span class="toggle-title">Blur Box</span>
+                                            <label class="switch-toggle">
+                                                <input type="checkbox" id="blurToggle"
+                                                    onchange="updateLivePreviewOverlays()">
+                                                <span class="slider-round"></span>
+                                            </label>
+                                        </div>
+                                        <p class="toggle-sub">Cover original hardcoded captions with a blur region</p>
+
+                                        <!-- Smart Auto-Detect Button & Toggle Row -->
+                                        <div style="display: flex; flex-direction: column; gap: 6px; margin: 6px 0; padding: 8px 10px; background: rgba(99,102,241,0.08); border: 1px solid rgba(99,102,241,0.25); border-radius: 8px;">
+                                            <div style="display: flex; align-items: center; justify-content: space-between;">
+                                                <div style="display: flex; align-items: center; gap: 6px;">
+                                                    <i class="fa-solid fa-wand-magic-sparkles" style="color: #818cf8; font-size: 11px;"></i>
+                                                    <span style="font-size: 0.74rem; font-weight: 700; color: var(--text-main);">Smart Caption AI</span>
+                                                </div>
+                                                <button type="button" class="btn btn-sm btn-secondary" id="autoDetectBlurBtn" onclick="autoDetectCaptionRegion()" style="height: 24px; font-size: 10.5px; padding: 0 8px; min-width: unset;">
+                                                    <i class="fa-solid fa-crosshairs"></i> Auto-Detect Region
+                                                </button>
+                                            </div>
+                                            <div class="toggle-row" style="margin: 0;">
+                                                <span class="toggle-sub" style="margin: 0; font-size: 0.7rem;">Auto-fit blur box on video render</span>
+                                                <label class="switch-toggle" style="transform: scale(0.75);">
+                                                    <input type="checkbox" id="blurAutoDetectToggle">
+                                                    <span class="slider-round"></span>
+                                                </label>
+                                            </div>
+                                        </div>
+
+                                        <hr class="panel-divider">
+
+
+                                        <div class="slider-group">
+                                            <div class="slider-label">Position Y <span id="valBlurPosY"
+                                                    class="val-blue">57.34%</span></div>
+                                            <input type="range" id="blurPosY" min="0" max="100" value="57.34"
+                                                step="0.01" oninput="updateLivePreviewOverlays()">
+                                        </div>
+
+                                        <div class="slider-group">
+                                            <div class="slider-label">Height <span id="valBlurHeight"
+                                                    class="val-blue">7%</span></div>
+                                            <input type="range" id="blurHeight" min="1" max="30" value="7" step="0.5"
+                                                oninput="updateLivePreviewOverlays()">
+                                        </div>
+
+                                        <div class="slider-group">
+                                            <div class="slider-label">Position X <span id="valBlurPosX"
+                                                    class="val-blue">0.00%</span></div>
+                                            <input type="range" id="blurPosX" min="0" max="100" value="0" step="0.01"
+                                                oninput="updateLivePreviewOverlays()">
+                                        </div>
+
+                                        <div class="slider-group">
+                                            <div class="slider-label">Width <span id="valBlurWidth"
+                                                    class="val-blue">100%</span></div>
+                                            <input type="range" id="blurWidth" min="10" max="100" value="100" step="1"
+                                                oninput="updateLivePreviewOverlays()">
+                                        </div>
+
+                                        <div class="slider-group">
+                                            <div class="slider-label">Opacity <span id="valBlurOpacity"
+                                                    class="val-blue">100%</span></div>
+                                            <input type="range" id="blurOpacity" min="0" max="100" value="100" step="1"
+                                                oninput="updateLivePreviewOverlays()">
+                                        </div>
+                                    </div>
+
+                                    <!-- TAB 3: Burn-in Subtitles (Captions) (Screenshot 2) -->
+                                    <div class="tab-panel" id="panelSubtitles">
+                                        <div class="toggle-row">
+                                            <span class="toggle-title">Burn-in Subtitles (Captions)</span>
+                                            <label class="switch-toggle">
+                                                <input type="checkbox" id="subToggle"
+                                                    onchange="updateLivePreviewOverlays()">
+                                                <span class="slider-round"></span>
+                                            </label>
+
+                                        </div>
+                                        <hr class="panel-divider">
+
+                                        <div class="form-grid margin-top-sm">
+                                            <div class="form-group">
+                                                <label for="subStylePreset">Style Preset</label>
+                                                <select id="subStylePreset" class="select-input"
+                                                    onchange="updateLivePreviewOverlays()">
+                                                    <option value="Outline" selected>Outline</option>
+                                                    <option value="TikTokYellow">TikTok Yellow</option>
+                                                    <option value="CyberCyan">Cyber Cyan</option>
+                                                    <option value="YellowBox">Yellow Box</option>
+                                                    <option value="GreenBox">Green Box</option>
+                                                    <option value="RedHighlight">Red Highlight</option>
+                                                    <option value="WhiteText">White Text</option>
+                                                    <option value="Glow">Glow</option>
+                                                </select>
+                                            </div>
+
+                                            <div class="form-group">
+                                                <label for="subFont">Font</label>
+                                                <select id="subFont" class="select-input"
+                                                    onchange="updateLivePreviewOverlays()">
+                                                    <option value="Kantumruy Pro" selected>Kantumruy Pro (Khmer)
+                                                    </option>
+                                                    <option value="Inter">Inter</option>
+                                                    <option value="Roboto">Roboto</option>
+                                                    <option value="Arial">Arial</option>
+                                                </select>
+                                            </div>
+                                        </div>
+
+                                        <div class="color-style-row margin-top-sm">
+                                            <span class="style-row-label">Color &amp; Style</span>
+                                            <div class="color-style-controls">
+                                                <input type="color" id="subTextColor" value="#FFFFFF"
+                                                    class="color-swatch-picker" title="Text Color"
+                                                    onchange="updateLivePreviewOverlays()">
+                                                <input type="color" id="subOutlineColor" value="#000000"
+                                                    class="color-swatch-picker" title="Outline Color"
+                                                    onchange="updateLivePreviewOverlays()">
+                                                <button class="style-toggle-btn active" id="subBoldBtn"
+                                                    onclick="toggleSubStyle('bold')" title="Bold">B</button>
+                                                <button class="style-toggle-btn" id="subItalicBtn"
+                                                    onclick="toggleSubStyle('italic')" title="Italic"><i>I</i></button>
+                                            </div>
+                                        </div>
+
+                                        <div class="slider-group">
+                                            <div class="slider-label">Size <span id="valSubSize"
+                                                    class="val-blue">3px</span></div>
+                                            <input type="range" id="subSize" min="1" max="50" value="3" step="0.5"
+                                                oninput="updateLivePreviewOverlays()">
+                                        </div>
+
+                                        <div class="slider-group">
+                                            <div class="slider-label">Text Opacity <span id="valSubTextOpacity"
+                                                    class="val-blue">100%</span></div>
+                                            <input type="range" id="subTextOpacity" min="0" max="100" value="100"
+                                                step="1" oninput="updateLivePreviewOverlays()">
+                                        </div>
+
+                                        <div class="slider-group">
+                                            <div class="slider-label">Outline <span id="valSubOutline"
+                                                    class="val-blue">1px</span></div>
+                                            <input type="range" id="subOutline" min="0" max="10" value="1" step="0.5"
+                                                oninput="updateLivePreviewOverlays()">
+                                        </div>
+
+                                        <div class="slider-group">
+                                            <div class="slider-label">Position <span id="valSubPos"
+                                                    class="val-blue">62%</span></div>
+                                            <input type="range" id="subPos" min="0" max="100" value="62" step="1"
+                                                oninput="updateLivePreviewOverlays()">
+                                        </div>
+
+                                        <div class="form-group margin-top-sm">
+                                            <label for="subAnim">Animation</label>
+                                            <select id="subAnim" class="select-input"
+                                                onchange="updateLivePreviewOverlays()">
+                                                <option value="None" selected>None</option>
+                                                <option value="Fade">Fade In</option>
+                                                <option value="Pop">Pop / Zoom In</option>
+                                                <option value="Slide">Slide Up</option>
+                                            </select>
+                                        </div>
+                                    </div>
+
+                                    <!-- TAB 4: Enable Text Overlay (Screenshot 3) -->
+                                    <div class="tab-panel" id="panelText">
+                                        <div class="toggle-row">
+                                            <span class="toggle-title">Enable Text Overlay</span>
+                                            <label class="switch-toggle">
+                                                <input type="checkbox" id="textToggle"
+                                                    onchange="updateLivePreviewOverlays()">
+                                                <span class="slider-round"></span>
+                                            </label>
+                                        </div>
+                                        <hr class="panel-divider">
+
+                                        <div class="form-group margin-top-sm text-inline-row">
+                                            <label for="overlayText" class="label-inline">Text</label>
+                                            <input type="text" id="overlayText" value="SNK Drama" class="text-input"
+                                                oninput="updateLivePreviewOverlays()">
+                                        </div>
+
+                                        <div class="form-grid margin-top-sm">
+                                            <div class="form-group">
+                                                <label for="textFont">Font</label>
+                                                <select id="textFont" class="select-input"
+                                                    onchange="updateLivePreviewOverlays()">
+                                                    <option value="Kantumruy Pro" selected>Kantumruy Pro (Khmer)
+                                                    </option>
+                                                    <option value="Inter">Inter</option>
+                                                    <option value="Roboto">Roboto</option>
+                                                </select>
+                                            </div>
+
+                                            <div class="form-group">
+                                                <label for="textAnim">Animation</label>
+                                                <select id="textAnim" class="select-input"
+                                                    onchange="updateLivePreviewOverlays()">
+                                                    <option value="slide_top" selected>Slide: Top to Bottom</option>
+                                                    <option value="slide_bottom">Slide: Bottom to Top</option>
+                                                    <option value="slide_left">Slide: Left to Right</option>
+                                                    <option value="fade">Fade In / Out</option>
+                                                    <option value="pulse">Pulse / Zoom</option>
+                                                    <option value="bounce">Bounce</option>
+                                                    <option value="none">None</option>
+                                                </select>
+                                            </div>
+                                        </div>
+
+                                        <div class="slider-group">
+                                            <div class="slider-label">Anim Speed <span id="valTextSpeed"
+                                                    class="val-blue">10s</span></div>
+                                            <input type="range" id="textSpeed" min="1" max="20" value="10" step="1"
+                                                oninput="updateLivePreviewOverlays()">
+                                        </div>
+
+                                        <div class="color-style-row margin-top-sm">
+                                            <span class="style-row-label">Color &amp; Style</span>
+                                            <div class="color-style-controls">
+                                                <input type="color" id="textColorFill" value="#FFFFFF"
+                                                    class="color-swatch-picker" title="Text Color"
+                                                    onchange="updateLivePreviewOverlays()">
+                                                <input type="color" id="textColorBg" value="#808080"
+                                                    class="color-swatch-picker" title="Background Color"
+                                                    onchange="updateLivePreviewOverlays()">
+                                                <input type="color" id="textColorOutline" value="#FFFFFF"
+                                                    class="color-swatch-picker" title="Outline Color"
+                                                    onchange="updateLivePreviewOverlays()">
+                                                <button class="style-toggle-btn active" id="textBoldBtn"
+                                                    onclick="toggleTextStyle('bold')" title="Bold">B</button>
+                                                <button class="style-toggle-btn active" id="textItalicBtn"
+                                                    onclick="toggleTextStyle('italic')" title="Italic"><i>I</i></button>
+                                                <span class="loop-label">LOOP</span>
+                                                <label class="switch-toggle switch-sm">
+                                                    <input type="checkbox" id="textLoopToggle" checked
+                                                        onchange="updateLivePreviewOverlays()">
+                                                    <span class="slider-round"></span>
+                                                </label>
+                                            </div>
+                                        </div>
+
+                                        <div class="slider-group">
+                                            <div class="slider-label">Size <span id="valTextSize"
+                                                    class="val-blue">3px</span></div>
+                                            <input type="range" id="textSize" min="1" max="100" value="3" step="1"
+                                                oninput="updateLivePreviewOverlays()">
+                                        </div>
+
+                                        <div class="slider-group">
+                                            <div class="slider-label">Bg Opacity <span id="valTextBgOpacity"
+                                                    class="val-blue">0%</span></div>
+                                            <input type="range" id="textBgOpacity" min="0" max="100" value="0" step="1"
+                                                oninput="updateLivePreviewOverlays()">
+                                        </div>
+
+                                        <div class="slider-group">
+                                            <div class="slider-label">Text Opacity <span id="valTextOpacity"
+                                                    class="val-blue">35%</span></div>
+                                            <input type="range" id="textOpacity" min="0" max="100" value="35" step="1"
+                                                oninput="updateLivePreviewOverlays()">
+                                        </div>
+
+                                        <div class="slider-group">
+                                            <div class="slider-label">Outline <span id="valTextOutlineWidth"
+                                                    class="val-blue">0px</span></div>
+                                            <input type="range" id="textOutlineWidth" min="0" max="10" value="0"
+                                                step="0.5" oninput="updateLivePreviewOverlays()">
+                                        </div>
+
+                                        <div class="slider-group">
+                                            <div class="slider-label">Shadow <span id="valTextShadow"
+                                                    class="val-blue">0px</span></div>
+                                            <input type="range" id="textShadow" min="0" max="20" value="0" step="1"
+                                                oninput="updateLivePreviewOverlays()">
+                                        </div>
+
+                                        <div class="slider-group">
+                                            <div class="slider-label">Position <span id="valTextPosY"
+                                                    class="val-blue">15%</span></div>
+                                            <input type="range" id="textPosY" min="0" max="100" value="15" step="1"
+                                                oninput="updateLivePreviewOverlays()">
+                                        </div>
+                                    </div>
+
+                                    <!-- TAB 5: Logo Watermark (Screenshot 4) -->
+                                    <div class="tab-panel" id="panelLogo">
+                                        <div class="toggle-row">
+                                            <span class="toggle-title">Logo Watermark</span>
+                                            <div class="header-action-group">
+                                                <button class="btn btn-secondary btn-sm" onclick="triggerLogoBrowse()">
+                                                    <i class="fa-solid fa-folder-open"></i> Browse
+                                                </button>
+                                                <label class="switch-toggle">
+                                                    <input type="checkbox" id="logoToggle"
+                                                        onchange="updateLivePreviewOverlays()">
+                                                    <span class="slider-round"></span>
+                                                </label>
+                                            </div>
+                                        </div>
+                                        <hr class="panel-divider">
+
+                                        <input type="file" id="logoFileInput" accept="image/*" style="display:none;"
+                                            onchange="handleLogoSelect(this)">
+                                        <div class="file-display-box" id="logoFilePathBox">
+                                            <span id="logoFileName" class="file-path-text">No logo selected</span>
+                                            <button class="file-clear-btn" id="logoClearBtn" onclick="clearLogoFile()"
+                                                title="Remove logo"><i class="fa-solid fa-xmark"></i></button>
+                                        </div>
+
+                                        <div class="slider-group">
+                                            <div class="slider-label">Size <span id="valLogoSize"
+                                                    class="val-blue">54%</span></div>
+                                            <input type="range" id="logoSize" min="10" max="100" value="54" step="1"
+                                                oninput="updateLivePreviewOverlays()">
+                                        </div>
+
+                                        <div class="slider-group">
+                                            <div class="slider-label">Opacity <span id="valLogoOpacity"
+                                                    class="val-blue">10%</span></div>
+                                            <input type="range" id="logoOpacity" min="0" max="100" value="10" step="1"
+                                                oninput="updateLivePreviewOverlays()">
+                                        </div>
+
+                                        <div class="slider-group">
+                                            <div class="slider-label">Radius <span id="valLogoRadius"
+                                                    class="val-blue">0px</span></div>
+                                            <input type="range" id="logoRadius" min="0" max="30" value="0" step="1"
+                                                oninput="updateLivePreviewOverlays()">
+                                        </div>
+
+                                        <div class="slider-group">
+                                            <div class="slider-label">Shadow <span id="valLogoShadow"
+                                                    class="val-blue">0px</span></div>
+                                            <input type="range" id="logoShadow" min="0" max="20" value="0" step="1"
+                                                oninput="updateLivePreviewOverlays()">
+                                        </div>
+
+                                        <p class="hint-text"><i class="fa-solid fa-circle-info"></i> Drag logo on player
+                                            to reposition</p>
+                                    </div>
+
+                                    <!-- TAB 6: Video Overlay (PIP) (Screenshot 5) -->
+                                    <div class="tab-panel" id="panelPip">
+                                        <div class="toggle-row">
+                                            <span class="toggle-title">Video Overlay (PIP)</span>
+                                            <div class="header-action-group">
+                                                <button class="btn btn-secondary btn-sm" onclick="triggerPipBrowse()">
+                                                    <i class="fa-solid fa-folder-open"></i> Browse
+                                                </button>
+                                                <label class="switch-toggle">
+                                                    <input type="checkbox" id="pipToggle"
+                                                        onchange="updateLivePreviewOverlays()">
+                                                    <span class="slider-round"></span>
+                                                </label>
+                                            </div>
+                                        </div>
+                                        <hr class="panel-divider">
+
+                                        <input type="file" id="pipFileInput" accept="video/*" style="display:none;"
+                                            onchange="handlePipFileSelect(this)">
+                                        <div class="file-display-box" id="pipFilePathBox">
+                                            <span id="pipFileName" class="file-path-text">No PIP video selected</span>
+                                            <button class="file-clear-btn" id="pipClearBtn" onclick="clearPipFile()"
+                                                title="Remove PIP video"><i class="fa-solid fa-xmark"></i></button>
+                                        </div>
+
+                                        <div class="slider-group">
+                                            <div class="slider-label">Size <span id="valPipSize"
+                                                    class="val-blue">74%</span></div>
+                                            <input type="range" id="pipSize" min="10" max="100" value="74" step="1"
+                                                oninput="updateLivePreviewOverlays()">
+                                        </div>
+
+                                        <div class="slider-group">
+                                            <div class="slider-label">Opacity <span id="valPipOpacity"
+                                                    class="val-blue">10%</span></div>
+                                            <input type="range" id="pipOpacity" min="0" max="100" value="10" step="1"
+                                                oninput="updateLivePreviewOverlays()">
+                                        </div>
+
+                                        <p class="hint-text"><i class="fa-solid fa-circle-info"></i> Drag video on
+                                            player to reposition</p>
+                                    </div>
+
+                                    <!-- TAB 7: Video Color Adjustment -->
+                                    <div class="tab-panel" id="panelColor">
+                                        <div class="toggle-row">
+                                            <span class="toggle-title">Color Adjustment</span>
+                                            <label class="switch-toggle">
+                                                <input type="checkbox" id="colorToggle"
+                                                    onchange="updateLivePreviewOverlays()">
+                                                <span class="slider-round"></span>
+                                            </label>
+                                        </div>
+                                        <p class="toggle-sub">Adjust video brightness, contrast, saturation &amp; hue
+                                            tint</p>
+                                        <hr class="panel-divider">
+
+                                        <div class="slider-group">
+                                            <div class="slider-label">Brightness <span id="valColorBrightness"
+                                                    class="val-blue">0</span></div>
+                                            <input type="range" id="colorBrightness" min="-50" max="50" value="0"
+                                                step="1" oninput="updateLivePreviewOverlays()">
+                                        </div>
+
+                                        <div class="slider-group">
+                                            <div class="slider-label">Contrast <span id="valColorContrast"
+                                                    class="val-blue">100%</span></div>
+                                            <input type="range" id="colorContrast" min="50" max="180" value="100"
+                                                step="1" oninput="updateLivePreviewOverlays()">
+                                        </div>
+
+                                        <div class="slider-group">
+                                            <div class="slider-label">Saturation <span id="valColorSaturation"
+                                                    class="val-blue">100%</span></div>
+                                            <input type="range" id="colorSaturation" min="0" max="200" value="100"
+                                                step="1" oninput="updateLivePreviewOverlays()">
+                                        </div>
+
+                                        <div class="slider-group">
+                                            <div class="slider-label">Hue Tint <span id="valColorHue"
+                                                    class="val-blue">0°</span></div>
+                                            <input type="range" id="colorHue" min="-180" max="180" value="0" step="1"
+                                                oninput="updateLivePreviewOverlays()">
+                                        </div>
+
+                                        <div class="margin-top-md">
+                                            <button class="btn btn-secondary btn-sm btn-block"
+                                                onclick="resetColorAdjustment()">
+                                                <i class="fa-solid fa-rotate-left"></i> Reset Color Defaults
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Batch Video Processing Section -->
+            <section class="panel studio-panel hidden" id="batchSection">
+                <div class="batch-card glass">
+                    <div class="batch-header">
+                        <div class="batch-actions">
+                            <input type="file" id="batchFileInput" multiple accept="video/*" style="display:none;"
+                                onchange="handleBatchFileSelect(this)">
+                            <input type="hidden" id="batchOutputFolderInput" value="">
+                            <button class="btn btn-secondary" onclick="triggerBatchFilePicker()">
+                                <i class="fa-solid fa-plus"></i> Add Videos
+                            </button>
+                            <button class="btn btn-outline-success" id="selectOutputFolderBtn" onclick="browseBatchOutputFolder()" title="Select output directory where dubbed videos will auto-save">
+                                <i class="fa-solid fa-folder-open"></i> <span id="selectOutputFolderBtnText">Output Folder</span>
+                            </button>
+
+                            <!-- Inline Batch Preset Selector (Compact Glass Glow) -->
+                            <div class="batch-preset-wrapper" title="Select Editing Preset to auto-apply to all batch videos">
+                                <i class="fa-solid fa-bookmark preset-icon"></i>
+                                <span class="preset-label">Preset:</span>
+                                <select id="batchPresetSelect" class="batch-preset-select" onchange="applyBatchPresetChange(this.value)">
+                                    <option value="__none__">— No Preset —</option>
+                                </select>
+                            </div>
+
+
+
+                            <button class="btn btn-primary" id="startBatchBtn" onclick="startBatchProcessing()"
+                                disabled>
+                                <i class="fa-solid fa-play"></i> Start Batch Queue
+                            </button>
+                            <button class="btn btn-danger" onclick="clearBatchQueue()">
+                                <i class="fa-solid fa-trash"></i> Clear Queue
+                            </button>
+                        </div>
+                    </div>
+
+
+
+
+                    <!-- Overall Batch Progress Bar -->
+                    <div class="batch-overall-progress margin-top-md hidden" id="batchOverallProgress">
+                        <div class="batch-progress-info">
+                            <span id="batchProgressText">0 of 0 Videos Processed (0%)</span>
+                            <span id="batchCurrentStatusText" class="text-primary font-bold">Processing queue...</span>
+                        </div>
+                        <div class="progress-bar-wrapper margin-top-xs">
+                            <div class="progress-bar" id="batchOverallProgressBar" style="width: 0%;"></div>
+                        </div>
+                    </div>
+
+                    <!-- Batch Queue Table -->
+                    <div class="batch-table-container margin-top-md">
+                        <table class="batch-table" id="batchTable">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>Video File</th>
+                                    <th>Duration</th>
+                                    <th>Target Voice</th>
+                                    <th>Status</th>
+                                    <th>Progress</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="batchTableBody">
+                                <tr id="emptyBatchRow">
+                                    <td colspan="7" class="text-center py-5 text-muted">
+                                        <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; min-height: 150px;">
+                                            <i class="fa-solid fa-film fa-2x" style="color: var(--primary); opacity: 0.85;"></i>
+                                            <p style="margin: 0; font-size: 13.5px; line-height: 1.5; color: rgba(255,255,255,0.75);">
+                                                Upload multiple videos and dub them sequentially with shared target voice settings.<br>
+                                                Click <strong>"Add Videos"</strong> to select files.
+                                            </p>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Preferences Modal with Left Sidebar Navigation Tabs -->
+    <div class="modal-backdrop hidden" id="preferencesModal">
+        <div class="modal-card glass"
+            style="max-width: 820px; width: 92%; padding: 0; overflow: hidden; border-radius: 16px; display: flex; flex-direction: column; max-height: 85vh; background: rgba(18, 18, 28, 0.96); backdrop-filter: blur(20px);">
+            <!-- Modal Header -->
+            <div class="modal-header"
+                style="padding: 16px 20px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; background: rgba(0, 0, 0, 0.2);">
+                <h3
+                    style="margin: 0; font-size: 16px; font-weight: 700; color: #fff; display: flex; align-items: center; gap: 8px;">
+                    <i class="fa-solid fa-sliders" style="color: var(--primary-light);"></i> Studio Preferences &amp;
+                    Settings
+                </h3>
+                <button class="modal-close-btn" onclick="closePreferencesModal()"
+                    style="background: none; border: none; color: #aaa; font-size: 20px; cursor: pointer;">&times;</button>
+            </div>
+
+            <!-- Modal Content Layout: Left Nav Sidebar + Right Tab Panels -->
+            <div style="display: flex; flex: 1; min-height: 420px; overflow: hidden;">
+
+                <!-- Left Vertical Tabs Sidebar -->
+                <div class="pref-sidebar"
+                    style="width: 220px; background: rgba(0, 0, 0, 0.3); border-right: 1px solid var(--border-color); padding: 14px 10px; display: flex; flex-direction: column; gap: 6px; flex-shrink: 0;">
+                    <button type="button" class="pref-tab-btn active" id="tabBtnWorkflow"
+                        onclick="switchPrefTab('workflow')">
+                        <i class="fa-solid fa-wand-magic-sparkles"></i> Workflow Mode
+                    </button>
+                    <button type="button" class="pref-tab-btn" id="tabBtnEngines" onclick="switchPrefTab('engines')">
+                        <i class="fa-solid fa-brain"></i> AI Engines &amp; Keys
+                    </button>
+                    <button type="button" class="pref-tab-btn" id="tabBtnVoices" onclick="switchPrefTab('voices')">
+                        <i class="fa-solid fa-language"></i> Language &amp; Voices
+                    </button>
+                    <button type="button" class="pref-tab-btn" id="tabBtnVoiceConfig"
+                        onclick="switchPrefTab('voiceConfig')">
+                        <i class="fa-solid fa-microphone-lines"></i> Voice Config
+                    </button>
+                    <button type="button" class="pref-tab-btn" id="tabBtnIntroOutro"
+                        onclick="switchPrefTab('introOutro')">
+                        <i class="fa-solid fa-bullhorn"></i> Intro &amp; Outro Speech
+                    </button>
+                    <button type="button" class="pref-tab-btn" id="tabBtnAudio" onclick="switchPrefTab('audio')">
+                        <i class="fa-solid fa-sliders"></i> Vocal Treatment
+                    </button>
+                    <button type="button" class="pref-tab-btn" id="tabBtnLogs" onclick="switchPrefTab('logs')">
+                        <i class="fa-solid fa-list-check"></i> Activity Log
+                    </button>
+                </div>
+
+
+
+                <!-- Right Tab Content Panels (Scrollable) -->
+                <div class="pref-tab-content" style="flex: 1; padding: 22px; overflow-y: auto;">
+
+                    <!-- Tab Panel 1: Workflow Mode -->
+                    <div class="pref-panel active" id="prefPanelWorkflow">
+                        <div class="form-group margin-bottom-md">
+                            <label for="prefWorkflowModeSelect"><i class="fa-solid fa-wand-magic-sparkles"></i>
+                                Processing Workflow Mode:</label>
+                            <select id="prefWorkflowModeSelect" class="select-input"
+                                onchange="onPrefWorkflowModeChange(this.value)">
+                                <option value="dubbing" selected>🎙️ Full Speech Dubbing (Verbatim 1:1 Translation)
+                                </option>
+                                <option value="recap">🎬 Movie Recap AI (Plot Analysis &amp; Story Summarizer)</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group" id="prefRecapStyleGroup" style="opacity: 0.5; pointer-events: none;">
+                            <label for="recapStyleSelect"><i class="fa-solid fa-clapperboard"></i> Movie Recap Narrator
+                                Style:</label>
+                            <select id="recapStyleSelect" class="select-input">
+                                <option value="dramatic" selected>🎭 Dramatic Storyteller (អត្ថាធិប្បាយរឿងល្ខោន)
+                                </option>
+                                <option value="fast">⚡ Fast-Paced Movie Recap (សង្ខេបរឿងរហ័ស)</option>
+                                <option value="action">🔥 Action &amp; Suspense (សង្ខេបរឿងសកម្មភាព)</option>
+                                <option value="review">🎬 Film Review &amp; Plot (វិភាគ និងសង្ខេបរឿង)</option>
+                            </select>
+                        </div>
+
+                        <hr style="margin: 18px 0; border: 0; border-top: 1px solid rgba(255,255,255,0.1);">
+
+                        <!-- Save Subtitles (.srt) Toggle Row -->
+                        <div class="toggle-row"
+                            style="display: flex; align-items: center; justify-content: space-between;">
+                            <div>
+                                <span class="toggle-title" style="font-weight: 600; color: #fff;"><i
+                                        class="fa-solid fa-file-lines"></i> Auto-Save Subtitles (.srt) File</span>
+                                <p class="toggle-sub"
+                                    style="margin: 2px 0 0 0; font-size: 12px; color: rgba(255,255,255,0.6);">
+                                    Automatically export matching .srt subtitle file alongside the dubbed video into
+                                    output folder</p>
+                            </div>
+                            <label class="switch-toggle">
+                                <input type="checkbox" id="prefSaveSrtToggle" checked>
+                                <span class="slider-round"></span>
+                            </label>
+                        </div>
+
+                        <hr style="margin: 18px 0; border: 0; border-top: 1px solid rgba(255,255,255,0.1);">
+
+                        <!-- Concurrent Batch Processing Setting -->
+                        <div class="form-group margin-bottom-md">
+                            <label for="prefConcurrentBatchSelect">
+                                <i class="fa-solid fa-layer-group" style="color: var(--primary-light);"></i> Concurrent Batch Processing Threads:
+                            </label>
+                            <select id="prefConcurrentBatchSelect" class="select-input">
+                                <option value="1" selected>1 Thread — Sequential Processing (Default)</option>
+                                <option value="2">2 Threads — 2 Videos Parallel</option>
+                                <option value="3">3 Threads — 3 Videos Parallel</option>
+                                <option value="4">4 Threads — 4 Videos Parallel (High Speed)</option>
+                            </select>
+                            <span style="display:block; font-size:11.5px; margin-top:5px; color:rgba(255,255,255,0.5);">
+                                ⚡ Control how many batch queue videos process simultaneously in parallel.
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- Tab Panel 2: AI Engines & Keys -->
+                    <div class="pref-panel hidden" id="prefPanelEngines">
+                        <!-- Speech Recognition AI Engine -->
+                        <div class="form-group margin-bottom-md">
+                            <label for="whisperModelSelect"><i class="fa-solid fa-microphone-lines"></i> Speech
+                                Recognition AI Engine:</label>
+                            <select id="whisperModelSelect" class="select-input">
+                                <option value="gemini-audio">⚡ Google Gemini Audio AI (Multimodal LLM)</option>
+                                <option value="base" selected>Whisper Base (Local Free AI - Recommended)</option>
+                                <option value="tiny">Whisper Tiny (Local Fast)</option>
+                                <option value="small">Whisper Small (Local High Accuracy)</option>
+                                <option value="medium">Whisper Medium (Local Pro Quality)</option>
+                                <option value="large-v3">Whisper Large-v3 (Local Max Precision)</option>
+                            </select>
+                        </div>
+
+                        <!-- Primary AI Translation Model -->
+                        <div class="form-group margin-bottom-md">
+                            <label for="primaryAiModelSelect"><i class="fa-solid fa-brain"></i> 🤖 Primary AI
+                                Translation Model:</label>
+                            <select id="primaryAiModelSelect" class="select-input"
+                                onchange="onPrimaryAiModelChange(this.value)">
+                                <option value="gemini" selected>✨ Gemini API — Google AI (Default)</option>
+                            </select>
+                            <span id="primaryAiModelHint"
+                                style="display:block; font-size:11px; margin-top:4px; color:rgba(255,255,255,0.45);">✨
+                                Gemini API will be used for AI translation.</span>
+                        </div>
+
+                        <hr style="border:0; border-top:1px solid rgba(255,255,255,0.07); margin:8px 0 12px 0;">
+
+                        <!-- Gemini LLM API Key & Model Selection -->
+                        <div class="form-group margin-bottom-md">
+                            <label for="geminiModelSelect"><i class="fa-solid fa-brain"></i> Gemini AI Model
+                                Selection:</label>
+                            <select id="geminiModelSelect" class="select-input">
+                                <option value="gemini-2.0-flash" selected>⚡ Gemini 2.0 Flash (Recommended &amp; Fastest)
+                                </option>
+                                <option value="gemini-2.0-flash-lite">🚀 Gemini 2.0 Flash-Lite (Ultra Fast)</option>
+                                <option value="gemini-1.5-flash">💎 Gemini 1.5 Flash (Stable)</option>
+                                <option value="gemini-1.5-pro">🧠 Gemini 1.5 Pro (High Reasoning)</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="geminiApiKeyInput"><i class="fa-solid fa-key"></i> Gemini API Key (Supports
+                                Multi-Key Pool):</label>
+                            <div style="display: flex; gap: 6px;">
+                                <input type="password" id="geminiApiKeyInput" class="text-input"
+                                    placeholder="AIzaSy... (Separate multiple keys with commas for auto-rotation)"
+                                    style="flex: 1;">
+                                <button type="button" id="btnTestGemini" class="btn btn-secondary btn-sm"
+                                    onclick="testGeminiKeyLive()"
+                                    style="height: 32px; padding: 0 10px; flex-shrink: 0; min-width: 72px;"
+                                    title="Test live connection to Gemini API">
+                                    <i class="fa-solid fa-plug-circle-check"></i> Test
+                                </button>
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <!-- Tab Panel 3: Language & Voices -->
+                    <div class="pref-panel hidden" id="prefPanelVoices">
+                        <div class="form-group margin-bottom-md">
+                            <label for="targetLangSelect"><i class="fa-solid fa-globe"></i> Target Language:</label>
+                            <select id="targetLangSelect" class="select-input" onchange="onLanguageChange()">
+                                <!-- Dynamically populated from JS -->
+                            </select>
+                        </div>
+
+                        <div class="form-group margin-bottom-md">
+                            <label for="voiceSelect"><i class="fa-solid fa-user-gear"></i> Base Neural Voice
+                                (EdgeTTS):</label>
+                            <div style="display: flex; gap: 8px; align-items: center;">
+                                <select id="voiceSelect" class="select-input" style="flex: 1;">
+                                    <!-- Dynamically populated -->
+                                </select>
+                                <button type="button" id="btnPreviewNeuralVoice" class="btn btn-secondary btn-sm"
+                                    onclick="previewSelectedVoice('neural')"
+                                    style="white-space: nowrap; height: 36px; padding: 0 12px;">
+                                    <i class="fa-solid fa-volume-high"></i> Preview Voice
+                                </button>
+                            </div>
+                        </div>
+
+                        <hr class="panel-divider"
+                            style="margin: 16px 0; border: 0; border-top: 1px solid rgba(255,255,255,0.08);">
+
+                        <!-- RVC Toggle Switch Row -->
+                        <div class="toggle-row margin-bottom-md"
+                            style="display: flex; align-items: center; justify-content: space-between;">
+                            <span class="toggle-title" style="font-weight: 600;"><i
+                                    class="fa-solid fa-microphone-lines"></i> 🎙️ RVC Voice Cloning (.pth)</span>
+                            <label class="switch-toggle">
+                                <input type="checkbox" id="rvcToggle" onchange="onRvcToggleChange()">
+                                <span class="slider-round"></span>
+                            </label>
+                        </div>
+
+                        <!-- RVC Controls Group -->
+                        <div id="rvcControlsGroup" style="transition: opacity 0.2s ease;">
+                            <div class="form-group margin-bottom-md">
+                                <label for="rvcModelSelect">Select Cloned Voice Model (.pth):</label>
+                                <div style="display: flex; gap: 8px; align-items: center;">
+                                    <select id="rvcModelSelect" class="select-input" style="flex: 1;"
+                                        onchange="onRvcModelSelectChange(this)">
+                                        <option value="none" selected>Disabled (Standard Neural Voice)</option>
+                                    </select>
+                                    <button type="button" id="btnPreviewRvcVoice" class="btn btn-secondary btn-sm"
+                                        onclick="previewSelectedVoice('rvc')"
+                                        style="white-space: nowrap; height: 36px; padding: 0 12px;">
+                                        <i class="fa-solid fa-volume-high"></i> Preview Cloned Voice
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="slider-group">
+                                <div class="slider-label">RVC Pitch Shift (Semitones) <span id="valRvcPitch"
+                                        class="val-blue">0</span></div>
+                                <input type="range" id="rvcPitch" min="-12" max="12" value="0" step="1"
+                                    oninput="document.getElementById('valRvcPitch').textContent = this.value">
+                            </div>
+                        </div>
+
+
+                    </div>
+
+                    <!-- Tab Panel: Voice Config (RVC Cloning Manager) -->
+                    <div class="pref-panel hidden" id="prefPanelVoiceConfig">
+
+                        <!-- Upload Section -->
+                        <div class="form-group margin-bottom-sm">
+                            <div class="vc-upload-row">
+                                <div class="vc-upload-zone" id="vcUploadZone" onclick="triggerVoiceConfigUpload()">
+                                    <i class="fa-solid fa-file-arrow-up"></i>
+                                    <span>Click to upload <strong>.pth</strong>, <strong>.index</strong>, or
+                                        <strong>Audio File</strong></span>
+                                    <span class="vc-upload-hint">Upload <code>.wav</code>, <code>.mp3</code>,
+                                        <code>.flac</code>, <code>.m4a</code> to auto-clone voice</span>
+                                </div>
+                                <input type="file" id="vcRvcFileInput"
+                                    accept=".pth,.index,.wav,.mp3,.flac,.m4a,.ogg,.aac" style="display:none;"
+                                    onchange="handleVoiceConfigRvcUpload(this)">
+                            </div>
+                            <div id="vcUploadStatus" class="vc-upload-status" style="display:none;"></div>
+                        </div>
+
+
+
+                        <hr class="panel-divider"
+                            style="margin: 16px 0; border: 0; border-top: 1px solid rgba(255,255,255,0.08);">
+
+                        <!-- Installed Models List -->
+                        <div class="form-group">
+                            <div
+                                style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
+                                <label style="font-weight: 700; color: var(--primary-light); margin: 0;">
+                                    <i class="fa-solid fa-layer-group"></i> Installed Voice Models
+                                </label>
+                                <button type="button" class="btn btn-secondary btn-sm"
+                                    onclick="refreshVoiceConfigModels()" title="Refresh model list">
+                                    <i class="fa-solid fa-rotate"></i> Refresh
+                                </button>
+                            </div>
+                            <div id="vcModelsList" class="vc-models-list">
+                                <div class="vc-models-empty" id="vcModelsEmpty">
+                                    <i class="fa-solid fa-inbox fa-2x"></i>
+                                    <p>No RVC models installed yet.<br>Upload a <strong>.pth</strong> file above to get
+                                        started.</p>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <!-- Tab Panel 4: Custom Intro & Outro Speech -->
+                    <div class="pref-panel hidden" id="prefPanelIntroOutro">
+                        <div class="form-group margin-bottom-md"
+                            style="background: rgba(255,255,255,0.03); padding: 14px; border-radius: 12px; border: 1px solid var(--border-color);">
+                            <label
+                                style="font-weight: 700; color: var(--primary-light); margin-bottom: 10px; display: block;">
+                                <i class="fa-solid fa-bullhorn"></i> Custom Channel Intro &amp; Outro Speech:
+                            </label>
+
+                            <!-- Intro Speech Row -->
+                            <div style="margin-bottom: 12px;">
+                                <div
+                                    style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;">
+                                    <label for="introSpeechCheck"
+                                        style="font-size: 13px; font-weight: 600; cursor: pointer;">
+                                        <input type="checkbox" id="introSpeechCheck" style="margin-right: 6px;"
+                                            onchange="toggleIntroOutroInputs()">
+                                        🎙️ Enable Intro Welcome Speech (Opening)
+                                    </label>
+                                </div>
+                                <input type="text" id="introSpeechInput" class="text-input"
+                                    placeholder="e.g. សូមស្វាគមន៍មកកាន់ប្រព័ន្ធសម្រាយរឿងភាគរបស់យើង... / Welcome to our movie recap..."
+                                    disabled style="font-size: 13px;">
+                            </div>
+
+                            <!-- Outro Speech Row -->
+                            <div>
+                                <div
+                                    style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;">
+                                    <label for="outroSpeechCheck"
+                                        style="font-size: 13px; font-weight: 600; cursor: pointer;">
+                                        <input type="checkbox" id="outroSpeechCheck" style="margin-right: 6px;"
+                                            onchange="toggleIntroOutroInputs()">
+                                        📢 Enable Outro Ending Speech (Closing)
+                                    </label>
+                                </div>
+                                <input type="text" id="outroSpeechInput" class="text-input"
+                                    placeholder="e.g. សូមអរគុណសម្រាប់ការទស្សនា! កុំភ្លេចចុច Like & Subscribe... / Thanks for watching! Please like & subscribe!"
+                                    disabled style="font-size: 13px;">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tab Panel 5: Vocal Treatment -->
+                    <div class="pref-panel hidden" id="prefPanelAudio">
+                        <div class="form-group margin-bottom-md">
+                            <label><i class="fa-solid fa-microphone-slash"></i> Original Vocal Treatment:</label>
+                            <div class="radio-options-grid">
+                                <label class="radio-card">
+                                    <input type="radio" name="vocalMode" value="keep">
+                                    <div class="radio-content">
+                                        <span class="radio-title"><i class="fa-solid fa-music"></i> Keep 100% Original Audio (Full Background Sound)</span>
+                                        <span class="radio-desc">Preserves 100% of original background audio at full volume (0s fast-pass without re-encoding).</span>
+                                    </div>
+                                </label>
+
+                                <label class="radio-card">
+                                    <input type="radio" name="vocalMode" value="remove" checked>
+                                    <div class="radio-content">
+                                        <span class="radio-title"><i class="fa-solid fa-microphone-slash"></i> Remove
+                                            Original Vocal (Keep Only BGM)</span>
+                                        <span class="radio-desc">Strips 100% of original voice while keeping background
+                                            music intact.</span>
+                                    </div>
+                                </label>
+
+                                <label class="radio-card">
+                                    <input type="radio" name="vocalMode" value="duck">
+                                    <div class="radio-content">
+                                        <span class="radio-title"><i class="fa-solid fa-volume-low"></i> Lower Original
+                                            Vocal (Ducking)</span>
+                                        <span class="radio-desc">Reduces original audio volume in background behind new
+                                            voice.</span>
+                                    </div>
+                                </label>
+
+                                <label class="radio-card">
+                                    <input type="radio" name="vocalMode" value="mute">
+                                    <div class="radio-content">
+                                        <span class="radio-title"><i class="fa-solid fa-volume-xmark"></i> Mute Original
+                                            Audio Completely</span>
+                                        <span class="radio-desc">Only dubbed voice track will be played (no original
+                                            sound).</span>
+                                    </div>
+                                </label>
+                            </div>
+
+                            <div class="slider-group margin-top-md" style="margin-top: 18px;">
+                                <div class="slider-label"><i class="fa-solid fa-sliders"></i> BGM Music Volume <span id="valBgmVolume" class="val-blue">100%</span></div>
+                                <input type="range" id="bgmVolume" min="0" max="200" value="100" step="5" oninput="updateBgmVolumePreview(this.value)">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tab Panel 7: Activity Log -->
+                    <div class="pref-panel hidden" id="prefPanelLogs">
+                        <div
+                            style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                            <h4 style="margin: 0; font-size: 15px; font-weight: 600; color: #fff;"><i
+                                    class="fa-solid fa-list-check"></i> System Activity &amp; Task Logs</h4>
+                            <div style="display: flex; gap: 8px;">
+                                <button type="button" class="btn btn-secondary btn-sm" onclick="copyActivityLogs()"
+                                    title="Copy logs to clipboard" style="padding: 4px 10px; font-size: 12px;">
+                                    <i class="fa-solid fa-copy"></i> Copy Logs
+                                </button>
+                                <button type="button" class="btn btn-secondary btn-sm" onclick="clearActivityLogs()"
+                                    title="Clear log output" style="padding: 4px 10px; font-size: 12px;">
+                                    <i class="fa-solid fa-trash"></i> Clear
+                                </button>
+                            </div>
+                        </div>
+                        <div id="activityLogConsole"
+                            style="background: #0f172a; color: #38bdf8; font-family: 'Consolas', 'Courier New', monospace; font-size: 12px; padding: 14px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.1); height: 310px; overflow-y: auto; white-space: pre-wrap; line-height: 1.6; box-shadow: inset 0 2px 8px rgba(0,0,0,0.5);">
+                            [System] Activity log initialized. System ready for task processing.
+                        </div>
+                    </div>
+
+                </div>
+
+            </div>
+
+            <!-- Modal Footer -->
+            <div class="modal-footer"
+                style="padding: 12px 20px; border-top: 1px solid var(--border-color); display: flex; justify-content: flex-end; gap: 10px; background: rgba(0,0,0,0.15);">
+                <button type="button" class="btn btn-secondary" onclick="closePreferencesModal()">
+                    <i class="fa-solid fa-xmark"></i> Cancel
+                </button>
+                <button type="button" class="btn btn-primary" onclick="savePreferences()">
+                    <i class="fa-solid fa-check"></i> Save Preferences
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Custom Confirmation Modal (Compact & Small) -->
+    <div class="modal-backdrop hidden" id="confirmModal" style="z-index: 10000;">
+        <div class="modal-card glass"
+            style="max-width: 320px; text-align: center; padding: 18px 20px; border: 1px solid rgba(239, 68, 68, 0.35); background: rgba(18, 18, 28, 0.96); backdrop-filter: blur(20px); border-radius: 12px; box-shadow: 0 16px 40px rgba(0,0,0,0.75);">
+            <div id="confirmModalIcon" style="font-size: 28px; color: #ef4444; margin-bottom: 8px; transition: color 0.2s;">
+                <i class="fa-solid fa-circle-exclamation"></i>
+            </div>
+            <h3 id="confirmModalTitle" style="font-size: 15px; font-weight: 700; color: #fff; margin-bottom: 6px;">
+                Confirm Action</h3>
+            <p id="confirmModalMessage"
+                style="font-size: 12px; color: rgba(255,255,255,0.8); margin-bottom: 16px; line-height: 1.4; padding: 0 4px;">
+                Are you sure you want to proceed?
+            </p>
+            <div style="display: flex; justify-content: center; gap: 10px;">
+                <button type="button" class="btn btn-secondary" id="confirmModalCancelBtn" onclick="closeCustomConfirm(false)"
+                    style="padding: 6px 16px; border-radius: 8px; font-weight: 600; font-size: 12px;">
+                    <i class="fa-solid fa-xmark"></i> Cancel
+                </button>
+                <button type="button" class="btn btn-danger" id="confirmModalConfirmBtn" onclick="closeCustomConfirm(true)"
+                    style="padding: 6px 16px; border-radius: 8px; font-weight: 600; font-size: 12px; background: linear-gradient(135deg, #ef4444, #dc2626); color: #fff; border: none; cursor: pointer; box-shadow: 0 3px 10px rgba(239,68,68,0.35);">
+                    <i class="fa-solid fa-check"></i> Yes, Proceed
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Custom Input / Prompt Modal (Compact Glassmorphic Dialog) -->
+    <div class="modal-backdrop hidden" id="promptModal" style="z-index: 10001;">
+        <div class="modal-card glass"
+            style="max-width: 360px; text-align: left; padding: 20px 22px; border: 1px solid rgba(99, 102, 241, 0.4); background: rgba(18, 18, 28, 0.96); backdrop-filter: blur(20px); border-radius: 14px; box-shadow: 0 16px 40px rgba(0,0,0,0.85);">
+            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
+                <div id="promptModalIcon" style="font-size: 22px; color: var(--primary-light);">
+                    <i class="fa-solid fa-pen-to-square"></i>
+                </div>
+                <h3 id="promptModalTitle" style="font-size: 15px; font-weight: 700; color: #fff; margin: 0;">
+                    Enter Preset Name</h3>
+            </div>
+            <p id="promptModalMessage" style="font-size: 12px; color: rgba(255,255,255,0.7); margin-bottom: 12px; line-height: 1.4;">
+                Please type details below:</p>
+            <div style="margin-bottom: 16px;">
+                <input type="text" id="promptModalInput" class="text-input" style="width: 100%; height: 36px; font-size: 13px; padding: 0 12px; border-radius: 8px; background: rgba(0,0,0,0.3); color: #fff; border: 1px solid var(--border-color);" onkeydown="if(event.key==='Enter') closeCustomPrompt(this.value)">
+            </div>
+            <div style="display: flex; justify-content: flex-end; gap: 10px;">
+                <button type="button" class="btn btn-secondary" onclick="closeCustomPrompt(null)"
+                    style="padding: 6px 16px; border-radius: 8px; font-weight: 600; font-size: 12px;">
+                    <i class="fa-solid fa-xmark"></i> Cancel
+                </button>
+                <button type="button" class="btn btn-primary" onclick="closeCustomPrompt(document.getElementById('promptModalInput').value)"
+                    style="padding: 6px 18px; border-radius: 8px; font-weight: 600; font-size: 12px; background: linear-gradient(135deg, #6366f1, #4f46e5); color: #fff; border: none; cursor: pointer; box-shadow: 0 3px 10px rgba(99,102,241,0.35);">
+                    <i class="fa-solid fa-check"></i> Save
+                </button>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- Toast Notification Container -->
+    <div id="toastContainer"></div>
+
+
+    <script src="/static/js/main.js"></script>
+    <script>
+        // Display launch loading splash screen for 3 seconds before smooth fade out
+        window.addEventListener('load', function() {
+            setTimeout(function() {
+                const splash = document.getElementById('appLaunchSplash');
+                if (splash) {
+                    splash.classList.add('fade-out');
+                    setTimeout(() => splash.remove(), 500);
+                }
+            }, 3000);
+            // Auto-check for updates silently on startup (after 4s delay)
+            setTimeout(() => silentCheckForUpdates(), 4500);
+        });
+
+        /* ─── Online Update Feature ─────────────────────────────────────── */
+        let _updateData = null;
+
+        function openUpdateModal() {
+            const backdrop = document.getElementById('updateModalBackdrop');
+            backdrop.classList.remove('hidden');
+            runUpdateCheck();
+        }
+
+        function closeUpdateModal(e) {
+            if (e && e.target !== document.getElementById('updateModalBackdrop')) return;
+            document.getElementById('updateModalBackdrop').classList.add('hidden');
+        }
+
+        function runUpdateCheck() {
+            // Reset to checking state
+            document.getElementById('updateCheckingState').classList.remove('hidden');
+            document.getElementById('updateResultState').classList.add('hidden');
+            document.getElementById('uiDownloadBtn').classList.add('hidden');
+
+            fetch('/api/check_update')
+                .then(r => r.json())
+                .then(data => {
+                    _updateData = data;
+                    renderUpdateResult(data);
+                })
+                .catch(err => {
+                    renderUpdateResult({
+                        ok: false,
+                        current_version: '—',
+                        latest_version: '—',
+                        has_update: false,
+                        release_notes: 'Could not reach update server. Check your internet connection.',
+                        download_url: ''
+                    });
+                });
+        }
+
+        function renderUpdateResult(data) {
+            document.getElementById('updateCheckingState').classList.add('hidden');
+            document.getElementById('updateResultState').classList.remove('hidden');
+
+            document.getElementById('uiCurrentVer').textContent = 'v' + (data.current_version || '—');
+            document.getElementById('uiLatestVer').textContent = 'v' + (data.latest_version || '—');
+
+            const latestChip = document.getElementById('uiLatestChip');
+            const banner = document.getElementById('uiUpdateBanner');
+            const bannerIcon = document.getElementById('uiUpdateBannerIcon');
+            const bannerText = document.getElementById('uiUpdateBannerText');
+            const iconWrap = document.getElementById('updateModalIconWrap');
+            const dlBtn = document.getElementById('uiDownloadBtn');
+            const notesBox = document.getElementById('uiReleaseNotesBox');
+            const notesContent = document.getElementById('uiReleaseNotes');
+
+            if (data.has_update) {
+                latestChip.classList.add('new-avail');
+                banner.classList.add('needs-update');
+                bannerIcon.className = 'fa-solid fa-triangle-exclamation';
+                bannerText.textContent = 'A new version is available! Please update for the latest features and fixes.';
+                iconWrap.classList.add('has-update');
+                document.getElementById('updateModalTitle').textContent = 'Update Available!';
+                // Show download button
+                if (data.download_url) {
+                    dlBtn.href = data.download_url;
+                    dlBtn.classList.remove('hidden');
+                }
+                // Show badge in navbar
+                document.getElementById('updateBadgeDot').style.display = 'block';
+            } else {
+                latestChip.classList.remove('new-avail');
+                banner.classList.remove('needs-update');
+                bannerIcon.className = 'fa-solid fa-circle-check';
+                bannerText.textContent = 'You are running the latest version.';
+                iconWrap.classList.remove('has-update');
+                document.getElementById('updateModalTitle').textContent = 'Up to Date';
+                dlBtn.classList.add('hidden');
+                document.getElementById('updateBadgeDot').style.display = 'none';
+            }
+
+            if (data.release_notes) {
+                notesContent.textContent = data.release_notes;
+                notesBox.style.display = 'block';
+            } else {
+                notesBox.style.display = 'none';
+            }
+        }
+
+        function silentCheckForUpdates() {
+            // Silent background update check — only shows badge if update found
+            fetch('/api/check_update')
+                .then(r => r.json())
+                .then(data => {
+                    _updateData = data;
+                    if (data.has_update) {
+                        document.getElementById('updateBadgeDot').style.display = 'block';
+                        document.getElementById('updateBadgeLabel').textContent = 'Update!';
+                    }
+                })
+                .catch(() => {});
+        }
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,12 @@
+.git
+.gitignore
+__pycache__
+*.pyc
+outputs
+uploads
+.venv
+bin
+obj
+user_config.json
+.vscode
+.idea
