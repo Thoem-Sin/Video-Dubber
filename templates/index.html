@@ -1870,17 +1870,13 @@
 
                     <!-- Tab Panel 7: Activity Log -->
                     <div class="pref-panel hidden" id="prefPanelLogs">
-                        <div
-                            style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-                            <h4 style="margin: 0; font-size: 15px; font-weight: 600; color: #fff;"><i
-                                    class="fa-solid fa-list-check"></i> System Activity &amp; Task Logs</h4>
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                            <h4 style="margin: 0; font-size: 15px; font-weight: 600; color: #fff;"><i class="fa-solid fa-list-check"></i> System Activity &amp; Task Logs</h4>
                             <div style="display: flex; gap: 8px;">
-                                <button type="button" class="btn btn-secondary btn-sm" onclick="copyActivityLogs()"
-                                    title="Copy logs to clipboard" style="padding: 4px 10px; font-size: 12px;">
+                                <button type="button" class="btn btn-secondary btn-sm" onclick="copyActivityLogs()" title="Copy logs to clipboard" style="padding: 4px 10px; font-size: 12px;">
                                     <i class="fa-solid fa-copy"></i> Copy Logs
                                 </button>
-                                <button type="button" class="btn btn-secondary btn-sm" onclick="clearActivityLogs()"
-                                    title="Clear log output" style="padding: 4px 10px; font-size: 12px;">
+                                <button type="button" class="btn btn-secondary btn-sm" onclick="clearActivityLogs()" title="Clear log output" style="padding: 4px 10px; font-size: 12px;">
                                     <i class="fa-solid fa-trash"></i> Clear
                                 </button>
                             </div>
@@ -1911,14 +1907,35 @@
                                     <label for="downgradeVersionSelect" style="font-size: 12px; font-weight: 600; color: #e2e8f0; margin-bottom: 8px; display: block;">
                                         <i class="fa-solid fa-tags" style="color: #10b981;"></i> Select Target Version to Install / Downgrade:
                                     </label>
-                                    <select id="downgradeVersionSelect" class="select-input" style="width: 100%; height: 40px; background: #0f172a; border: 1px solid rgba(255,255,255,0.15); color: #fff; border-radius: 8px; padding: 0 12px; font-size: 13px; font-weight: 500;">
+                                    <select id="downgradeVersionSelect" class="select-input" onchange="onDowngradeVersionChange(this.value)" style="width: 100%; height: 40px; background: #0f172a; border: 1px solid rgba(255,255,255,0.15); color: #fff; border-radius: 8px; padding: 0 12px; font-size: 13px; font-weight: 500;">
                                         <option value="" disabled selected>Loading available release versions...</option>
                                     </select>
+                                </div>
+
+                                <!-- Selected Version Release Notes Preview -->
+                                <div id="selectedVersionNotesBox" style="display:none; margin-bottom: 16px; background: rgba(15, 23, 42, 0.85); border: 1px solid rgba(99, 102, 241, 0.3); border-radius: 10px; overflow: hidden;">
+                                    <div style="display: flex; align-items: center; gap: 8px; padding: 9px 14px; background: rgba(99, 102, 241, 0.1); border-bottom: 1px solid rgba(99, 102, 241, 0.2);">
+                                        <i class="fa-regular fa-file-lines" style="color: #818cf8; font-size: 12px;"></i>
+                                        <span id="selectedVersionNotesHeader" style="font-size: 11px; font-weight: 700; color: #818cf8; letter-spacing: 0.8px; text-transform: uppercase;">RELEASE NOTES</span>
+                                    </div>
+                                    <ul id="selectedVersionNotesList" style="margin: 10px 14px; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 5px; max-height: 110px; overflow-y: auto;"></ul>
                                 </div>
 
                                 <button type="button" class="btn" id="btnSwitchVersion" onclick="performVersionSwitch()" style="width: 100%; height: 40px; background: linear-gradient(135deg, #6366f1, #4f46e5); color: #ffffff; border: none; border-radius: 8px; font-size: 12.5px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 2px 10px rgba(99,102,241,0.35); transition: all 0.2s;">
                                     <i class="fa-solid fa-arrow-down-short-wide"></i> Switch / Downgrade Version Now
                                 </button>
+                            </div>
+
+                            <!-- Complete Release Notes History -->
+                            <div style="margin-top: 18px;">
+                                <h5 style="margin: 0 0 12px 0; font-size: 13px; font-weight: 700; color: #e2e8f0; display: flex; align-items: center; gap: 6px;">
+                                    <i class="fa-solid fa-clock-rotate-left" style="color: #10b981;"></i> Complete Version Release History
+                                </h5>
+                                <div id="fullReleaseHistoryList" style="max-height: 230px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; padding-right: 4px;">
+                                    <div style="color: #64748b; font-size: 12px; text-align: center; padding: 20px 0;">
+                                        <i class="fa-solid fa-spinner fa-spin" style="margin-right: 6px;"></i> Loading release history...
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -2226,19 +2243,22 @@
                         // Render Complete Version Release History list
                         if (historyList) {
                             historyList.innerHTML = versions.map(v => {
-                                const formattedNotes = formatReleaseNotesItems(v.notes);
                                 const isCurrent = v.version === data.current_version;
+                                const lines = (v.notes || '').split('\n').filter(l => l.trim());
+                                const notesHtml = lines.map(l => {
+                                    const text = l.replace(/^[-•]\s*/, '');
+                                    return `<li style="display:flex;align-items:flex-start;gap:7px;font-size:11.5px;color:#94a3b8;line-height:1.5;">
+                                        <i class="fa-solid fa-circle-check" style="color:#10b981;font-size:9px;margin-top:3px;flex-shrink:0;"></i>${text}</li>`;
+                                }).join('');
                                 return `
                                     <div style="background: rgba(15, 23, 42, 0.7); border: 1px solid rgba(255,255,255,0.07); border-radius: 10px; padding: 12px 14px;">
                                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
                                             <span style="font-size: 13px; font-weight: 700; color: #fff; display: flex; align-items: center; gap: 6px;">
                                                 <i class="fa-solid fa-tag" style="color: #6366f1; font-size: 11px;"></i> v${v.version}
                                             </span>
-                                            ${isCurrent ? '<span style="background: rgba(16, 185, 129, 0.2); color: #34d399; font-size: 10.5px; font-weight: 700; padding: 2px 8px; border-radius: 10px; border: 1px solid rgba(16,185,129,0.3);">Current</span>' : ''}
+                                            ${isCurrent ? '<span style="background: rgba(16, 185, 129, 0.2); color: #34d399; font-size: 10.5px; font-weight: 700; padding: 2px 8px; border-radius: 10px; border: 1px solid rgba(16,185,129,0.3);">&#10003; Current</span>' : ''}
                                         </div>
-                                        <div class="update-notes-list" style="max-height: none;">
-                                            ${formattedNotes}
-                                        </div>
+                                        <ul style="margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:4px;">${notesHtml}</ul>
                                     </div>
                                 `;
                             }).join('');
@@ -2253,16 +2273,21 @@
         function onDowngradeVersionChange(selectedVer) {
             const notesBox = document.getElementById('selectedVersionNotesBox');
             const notesHeader = document.getElementById('selectedVersionNotesHeader');
-            const notesContainer = document.getElementById('selectedVersionNotes');
-            if (!notesBox || !notesContainer) return;
+            const notesList = document.getElementById('selectedVersionNotesList');
+            if (!notesBox || !notesList) return;
 
             const target = _versionHistoryCache.find(v => v.version === selectedVer);
             if (target && target.notes) {
-                if (notesHeader) notesHeader.textContent = `RELEASE NOTES FOR V${selectedVer}`;
-                notesContainer.innerHTML = formatReleaseNotesItems(target.notes);
-                notesBox.classList.remove('hidden');
+                if (notesHeader) notesHeader.textContent = `RELEASE NOTES — V${selectedVer}`;
+                const lines = target.notes.split('\n').filter(l => l.trim());
+                notesList.innerHTML = lines.map(l => {
+                    const text = l.replace(/^[-•]\s*/, '');
+                    return `<li style="display:flex;align-items:flex-start;gap:7px;font-size:12px;color:#cbd5e1;line-height:1.5;">
+                        <i class="fa-solid fa-circle-check" style="color:#10b981;font-size:10px;margin-top:3px;flex-shrink:0;"></i>${text}</li>`;
+                }).join('');
+                notesBox.style.display = 'block';
             } else {
-                notesBox.classList.add('hidden');
+                notesBox.style.display = 'none';
             }
         }
 
