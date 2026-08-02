@@ -116,38 +116,51 @@ def get_gpu_status():
 
 APP_VERSION = "1.2.1"
 
-GITHUB_REPO = "Thoem-Sin/Video-Dubber"
+GITHUB_REPO = "thoem-sin/video-dubber"
 
 @app.route("/api/check_update", methods=["GET"])
 def check_update():
-    """Check GitHub Releases for latest published application update."""
-    try:
-        url = f"https://api.github.com/repos/{GITHUB_REPO}/releases/latest"
-        req = urllib.request.Request(
-            url,
-            headers={"User-Agent": "VideoDubberStudio-App"}
-        )
-        with urllib.request.urlopen(req, timeout=4) as resp:
-            data = json.loads(resp.read().decode("utf-8"))
-            latest_tag = data.get("tag_name", "").lstrip("v").strip()
-            html_url = data.get("html_url", f"https://github.com/{GITHUB_REPO}/releases")
-            notes = data.get("body", "")
-            
-            update_available = False
-            if latest_tag:
-                curr_parts = [int(p) for p in APP_VERSION.split(".") if p.isdigit()]
-                latest_parts = [int(p) for p in latest_tag.split(".") if p.isdigit()]
-                update_available = latest_parts > curr_parts
+    """Check GitHub Releases (then tags) for latest published application update."""
+    def fetch_json(url):
+        req = urllib.request.Request(url, headers={"User-Agent": "VideoDubberStudio-App"})
+        with urllib.request.urlopen(req, timeout=5) as resp:
+            return json.loads(resp.read().decode("utf-8"))
 
-            return jsonify({
-                "status": "ok",
-                "current_version": APP_VERSION,
-                "latest_version": latest_tag or APP_VERSION,
-                "has_update": update_available,
-                "update_available": update_available,
-                "download_url": html_url,
-                "release_notes": notes
-            })
+    try:
+        latest_tag = ""
+        html_url = f"https://github.com/{GITHUB_REPO}/releases"
+        notes = ""
+
+        # 1) Try the releases/latest endpoint first
+        try:
+            data = fetch_json(f"https://api.github.com/repos/{GITHUB_REPO}/releases/latest")
+            latest_tag = data.get("tag_name", "").lstrip("v").strip()
+            html_url = data.get("html_url", html_url)
+            notes = data.get("body", "")
+        except Exception:
+            pass
+
+        # 2) Fallback: read tags list (works even when no formal Release is published)
+        if not latest_tag:
+            tags_data = fetch_json(f"https://api.github.com/repos/{GITHUB_REPO}/tags")
+            if tags_data:
+                latest_tag = tags_data[0].get("name", "").lstrip("v").strip()
+
+        update_available = False
+        if latest_tag:
+            curr_parts = [int(p) for p in APP_VERSION.split(".") if p.isdigit()]
+            latest_parts = [int(p) for p in latest_tag.split(".") if p.isdigit()]
+            update_available = latest_parts > curr_parts
+
+        return jsonify({
+            "status": "ok",
+            "current_version": APP_VERSION,
+            "latest_version": latest_tag or APP_VERSION,
+            "has_update": update_available,
+            "update_available": update_available,
+            "download_url": html_url,
+            "release_notes": notes
+        })
     except Exception as ex:
         return jsonify({
             "status": "error",
