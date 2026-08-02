@@ -1510,6 +1510,9 @@
                     <button type="button" class="pref-tab-btn" id="tabBtnLogs" onclick="switchPrefTab('logs')">
                         <i class="fa-solid fa-list-check"></i> Activity Log
                     </button>
+                    <button type="button" class="pref-tab-btn" id="tabBtnVersion" onclick="switchPrefTab('version')">
+                        <i class="fa-solid fa-code-branch"></i> Version &amp; Downgrade
+                    </button>
                 </div>
 
 
@@ -1873,6 +1876,38 @@
                         </div>
                     </div>
 
+                    <!-- Tab Panel 8: Version Management & Downgrade -->
+                    <div class="pref-panel hidden" id="prefPanelVersion">
+                        <div style="background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 12px; padding: 20px;">
+                            <h4 style="margin: 0 0 10px 0; font-size: 15px; font-weight: 700; color: #fff; display: flex; align-items: center; gap: 8px;">
+                                <i class="fa-solid fa-code-branch" style="color: #6366f1;"></i> Version Management &amp; Downgrade
+                            </h4>
+                            <p style="font-size: 12.5px; color: #94a3b8; margin: 0 0 18px 0; line-height: 1.5;">
+                                Switch or downgrade to any official release version. Selecting an earlier release will restore that specific version build on your machine.
+                            </p>
+
+                            <div style="background: rgba(0, 0, 0, 0.25); border: 1px solid rgba(255, 255, 255, 0.06); border-radius: 10px; padding: 16px; margin-bottom: 18px;">
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                                    <span style="font-size: 12.5px; font-weight: 600; color: #cbd5e1;">Installed Version:</span>
+                                    <span id="prefCurrentVerBadge" style="background: rgba(99, 102, 241, 0.2); color: #818cf8; border: 1px solid rgba(99, 102, 241, 0.4); padding: 4px 12px; border-radius: 12px; font-size: 12px; font-weight: 700; letter-spacing: 0.5px;">v1.2.3</span>
+                                </div>
+
+                                <div class="form-group margin-bottom-md" style="margin-bottom: 16px;">
+                                    <label for="downgradeVersionSelect" style="font-size: 12px; font-weight: 600; color: #e2e8f0; margin-bottom: 8px; display: block;">
+                                        <i class="fa-solid fa-tags" style="color: #10b981;"></i> Select Target Version to Install / Downgrade:
+                                    </label>
+                                    <select id="downgradeVersionSelect" class="select-input" style="width: 100%; height: 40px; background: #0f172a; border: 1px solid rgba(255,255,255,0.15); color: #fff; border-radius: 8px; padding: 0 12px; font-size: 13px; font-weight: 500;">
+                                        <option value="" disabled selected>Loading available release versions...</option>
+                                    </select>
+                                </div>
+
+                                <button type="button" class="btn" id="btnSwitchVersion" onclick="performVersionSwitch()" style="width: 100%; height: 40px; background: linear-gradient(135deg, #6366f1, #4f46e5); color: #ffffff; border: none; border-radius: 8px; font-size: 12.5px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 2px 10px rgba(99,102,241,0.35); transition: all 0.2s;">
+                                    <i class="fa-solid fa-arrow-down-short-wide"></i> Switch / Downgrade Version Now
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
                 </div>
 
             </div>
@@ -2135,6 +2170,76 @@
                     }
                 })
                 .catch(() => {});
+        }
+
+        /* ─── Version History & Downgrade Manager ───────────────────────── */
+        function loadVersionHistory() {
+            const selectEl = document.getElementById('downgradeVersionSelect');
+            const badgeEl = document.getElementById('prefCurrentVerBadge');
+            if (!selectEl) return;
+
+            selectEl.innerHTML = '<option value="" disabled selected>Loading release history...</option>';
+
+            fetch('/api/version_history')
+                .then(r => r.json())
+                .then(data => {
+                    if (data.status === 'ok') {
+                        if (badgeEl && data.current_version) {
+                            badgeEl.textContent = 'v' + data.current_version;
+                        }
+                        const versions = data.versions || [];
+                        selectEl.innerHTML = '';
+
+                        versions.forEach(v => {
+                            const opt = document.createElement('option');
+                            opt.value = v.version;
+                            const isCurrent = v.version === data.current_version;
+                            opt.textContent = `v${v.version} ${isCurrent ? '(Currently Installed)' : ''}`;
+                            if (isCurrent) opt.selected = true;
+                            selectEl.appendChild(opt);
+                        });
+                    }
+                })
+                .catch(() => {
+                    selectEl.innerHTML = '<option value="1.2.3">v1.2.3 (Latest)</option><option value="1.2.2">v1.2.2</option><option value="1.2.1">v1.2.1</option><option value="1.2.0">v1.2.0</option>';
+                });
+        }
+
+        function performVersionSwitch() {
+            const selectEl = document.getElementById('downgradeVersionSelect');
+            if (!selectEl || !selectEl.value) return;
+
+            const targetVer = selectEl.value;
+            const confirmMsg = `Are you sure you want to switch / downgrade to version v${targetVer}? The app will install this release and prompt for restart.`;
+
+            if (!confirm(confirmMsg)) return;
+
+            // Close Preferences modal and show install progress modal
+            closePreferencesModal();
+
+            // Set progress dialog subtext
+            document.getElementById('ipdSubText').innerHTML = `Switching build to version v${targetVer}<span class="splash-dots"><span>.</span><span>.</span><span>.</span></span>`;
+            openIpd();
+
+            fetch('/api/switch_version', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ version: targetVer })
+            })
+            .then(r => r.json())
+            .then(res => {
+                if (res.status === 'ok') {
+                    ipdShowSuccess(false, res.new_version);
+                    if (typeof showToast === 'function') {
+                        showToast(`✅ Version v${res.new_version || targetVer} applied! Please restart the app.`, 'success');
+                    }
+                } else {
+                    ipdShowError(res.message || 'Failed to switch version.');
+                }
+            })
+            .catch(err => {
+                ipdShowError('Network or filesystem error while switching version.');
+            });
         }
 
         function autoCheckAndPopupOnLaunch() {

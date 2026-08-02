@@ -512,7 +512,7 @@ function loadPreferences() {
 }
 
 function switchPrefTab(tabId) {
-    const tabs = ['workflow', 'engines', 'voices', 'voiceConfig', 'introOutro', 'audio', 'theme', 'logs'];
+    const tabs = ['workflow', 'engines', 'voices', 'voiceConfig', 'introOutro', 'audio', 'theme', 'logs', 'version'];
     tabs.forEach(t => {
         const btn = document.getElementById(`tabBtn${t.charAt(0).toUpperCase() + t.slice(1)}`);
         const panel = document.getElementById(`prefPanel${t.charAt(0).toUpperCase() + t.slice(1)}`);
@@ -538,6 +538,10 @@ function switchPrefTab(tabId) {
     } else if (tabId === 'logs') {
         const consoleEl = document.getElementById('activityLogConsole');
         if (consoleEl) consoleEl.scrollTop = consoleEl.scrollHeight;
+    } else if (tabId === 'version') {
+        if (typeof loadVersionHistory === 'function') {
+            loadVersionHistory();
+        }
     }
 }
 

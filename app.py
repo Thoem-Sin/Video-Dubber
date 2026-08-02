@@ -346,6 +346,170 @@ def install_update():
         })
 
 
+@app.route("/api/version_history", methods=["GET"])
+def get_version_history():
+    """Returns a list of all release versions/tags available in the repository for version switching/downgrading."""
+    import urllib.request
+    import json as _json
+
+    tags = []
+    try:
+        req = urllib.request.Request(
+            f"https://api.github.com/repos/{GITHUB_REPO}/tags",
+            headers={"User-Agent": "VideoDubberStudio/1.2"}
+        )
+        with urllib.request.urlopen(req, timeout=6) as r:
+            tags_data = _json.loads(r.read())
+            for t in tags_data:
+                name = t.get("name", "").strip()
+                if name:
+                    clean_ver = name.lstrip("vV")
+                    tags.append({
+                        "tag": name if name.startswith("v") else f"v{clean_ver}",
+                        "version": clean_ver
+                    })
+    except Exception:
+        pass
+
+    # Ensure current version and standard fallback versions are included
+    curr_v = get_app_version()
+    known_versions = [curr_v, "1.2.3", "1.2.2", "1.2.1", "1.2.0"]
+    existing_vers = {t["version"] for t in tags}
+    for kv in known_versions:
+        if kv and kv not in existing_vers:
+            tags.append({"tag": f"v{kv}", "version": kv})
+            existing_vers.add(kv)
+
+    # Sort descending by version tuple
+    tags.sort(key=lambda x: _parse_version_tuple(x["version"]), reverse=True)
+    return jsonify({
+        "status": "ok",
+        "current_version": curr_v,
+        "versions": tags
+    })
+
+
+@app.route("/api/switch_version", methods=["POST"])
+def switch_version():
+    """Checkout or download a specific version tag to switch or downgrade the application version."""
+    import subprocess
+    import sys as _sys
+    import zipfile
+    import tempfile
+
+    data = request.json or {}
+    target_ver = data.get("version", "").strip().lstrip("vV")
+    if not target_ver:
+        return jsonify({"status": "error", "message": "No target version specified"})
+
+    app_dir = os.path.dirname(os.path.abspath(__file__))
+    target_tag = f"v{target_ver}"
+
+    # 1. Locate Git executable
+    git_cmd = shutil.which("git")
+    if not git_cmd:
+        candidates = [
+            r"C:\Program Files\Git\cmd\git.exe",
+            r"C:\Program Files\Git\bin\git.exe",
+            r"C:\Program Files (x86)\Git\cmd\git.exe",
+            os.path.expanduser(r"~\AppData\Local\Programs\Git\cmd\git.exe"),
+        ]
+        for candidate in candidates:
+            if os.path.exists(candidate):
+                git_cmd = candidate
+                break
+
+    # 2. Try git checkout / fetch to target version tag
+    if git_cmd:
+        try:
+            subprocess.run([git_cmd, "fetch", "--tags", "origin"], cwd=app_dir, capture_output=True, timeout=20)
+            subprocess.run([git_cmd, "checkout", "--", "version.txt"], cwd=app_dir, capture_output=True, timeout=10)
+
+            # Try checking out the tag
+            res = subprocess.run([git_cmd, "checkout", target_tag], cwd=app_dir, capture_output=True, text=True, timeout=30)
+            if res.returncode != 0:
+                res = subprocess.run([git_cmd, "checkout", target_ver], cwd=app_dir, capture_output=True, text=True, timeout=30)
+
+            if res.returncode == 0:
+                v_file = os.path.join(app_dir, "version.txt")
+                with open(v_file, "w", encoding="utf-8") as f:
+                    f.write(target_ver + "\n")
+
+                _update_cache["result"] = None
+                _update_cache["expires"] = 0
+                return jsonify({
+                    "status": "ok",
+                    "message": f"Successfully switched to version {target_ver}",
+                    "new_version": target_ver
+                })
+        except Exception:
+            pass
+
+    # 3. Fallback: Download ZIP of the specific tag from GitHub
+    try:
+        zip_url = f"https://github.com/{GITHUB_REPO}/archive/refs/tags/{target_tag}.zip"
+        req = urllib.request.Request(zip_url, headers={"User-Agent": "VideoDubberStudio/1.2"})
+        
+        tmp_zip_path = None
+        try:
+            with tempfile.NamedTemporaryFile(delete=False, suffix=".zip") as tmp_file:
+                tmp_zip_path = tmp_file.name
+                with urllib.request.urlopen(req, timeout=35) as response:
+                    tmp_file.write(response.read())
+        except Exception:
+            zip_url = f"https://github.com/{GITHUB_REPO}/archive/refs/tags/{target_ver}.zip"
+            req = urllib.request.Request(zip_url, headers={"User-Agent": "VideoDubberStudio/1.2"})
+            with tempfile.NamedTemporaryFile(delete=False, suffix=".zip") as tmp_file:
+                tmp_zip_path = tmp_file.name
+                with urllib.request.urlopen(req, timeout=35) as response:
+                    tmp_file.write(response.read())
+
+        if tmp_zip_path and os.path.exists(tmp_zip_path):
+            with tempfile.TemporaryDirectory() as tmp_dir:
+                with zipfile.ZipFile(tmp_zip_path, 'r') as zip_ref:
+                    zip_ref.extractall(tmp_dir)
+
+                subdirs = [os.path.join(tmp_dir, d) for d in os.listdir(tmp_dir) if os.path.isdir(os.path.join(tmp_dir, d))]
+                if subdirs:
+                    extracted_folder = subdirs[0]
+                    for root, dirs, files in os.walk(extracted_folder):
+                        rel_path = os.path.relpath(root, extracted_folder)
+                        target_dir = os.path.join(app_dir, rel_path) if rel_path != "." else app_dir
+                        if ".git" in rel_path.split(os.sep):
+                            continue
+                        os.makedirs(target_dir, exist_ok=True)
+                        for file in files:
+                            src_file = os.path.join(root, file)
+                            dst_file = os.path.join(target_dir, file)
+                            try:
+                                shutil.copy2(src_file, dst_file)
+                            except Exception:
+                                pass
+
+            try:
+                os.remove(tmp_zip_path)
+            except Exception:
+                pass
+
+        v_file = os.path.join(app_dir, "version.txt")
+        with open(v_file, "w", encoding="utf-8") as f:
+            f.write(target_ver + "\n")
+
+        _update_cache["result"] = None
+        _update_cache["expires"] = 0
+        return jsonify({
+            "status": "ok",
+            "message": f"Successfully applied version {target_ver}",
+            "new_version": target_ver
+        })
+
+    except Exception as e:
+        return jsonify({
+            "status": "error",
+            "message": f"Failed to switch to version {target_ver}: {str(e)}"
+        })
+
+
 
 @app.route("/api/restart_app", methods=["POST"])
 def restart_app():
