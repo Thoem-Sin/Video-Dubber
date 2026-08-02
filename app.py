@@ -117,63 +117,75 @@ def get_gpu_status():
 APP_VERSION = "1.2.1"
 
 GITHUB_REPO = "thoem-sin/video-dubber"
+GITHUB_BRANCH = "main"
+
+# Cache update result for 5 minutes to avoid hammering network
+_update_cache = {"result": None, "expires": 0}
 
 @app.route("/api/check_update", methods=["GET"])
 def check_update():
-    """Check GitHub Releases (then tags) for latest published application update."""
-    def fetch_json(url):
-        req = urllib.request.Request(url, headers={"User-Agent": "VideoDubberStudio-App"})
-        with urllib.request.urlopen(req, timeout=5) as resp:
-            return json.loads(resp.read().decode("utf-8"))
+    """Check for updates via version.txt on raw.githubusercontent.com (no rate limits)."""
+    import time as _time
 
+    if _update_cache["result"] and _time.time() < _update_cache["expires"]:
+        return jsonify(_update_cache["result"])
+
+    latest_tag = ""
+    html_url = f"https://github.com/{GITHUB_REPO}/releases"
+    notes = ""
+
+    def fetch(url, headers=None):
+        req = urllib.request.Request(url, headers=headers or {"User-Agent": "VideoDubberStudio/1.2"})
+        with urllib.request.urlopen(req, timeout=6) as r:
+            return r.read().decode("utf-8").strip()
+
+    # Method 1: Read version.txt from raw.githubusercontent.com — NO rate limits
     try:
-        latest_tag = ""
-        html_url = f"https://github.com/{GITHUB_REPO}/releases"
-        notes = ""
+        raw_url = f"https://raw.githubusercontent.com/{GITHUB_REPO}/{GITHUB_BRANCH}/version.txt"
+        latest_tag = fetch(raw_url).splitlines()[0].strip().lstrip("v")
+    except Exception:
+        pass
 
-        # 1) Try the releases/latest endpoint first
+    # Method 2: GitHub Tags API (fallback)
+    if not latest_tag:
         try:
-            data = fetch_json(f"https://api.github.com/repos/{GITHUB_REPO}/releases/latest")
-            latest_tag = data.get("tag_name", "").lstrip("v").strip()
-            html_url = data.get("html_url", html_url)
-            notes = data.get("body", "")
+            import json as _json
+            req = urllib.request.Request(
+                f"https://api.github.com/repos/{GITHUB_REPO}/tags",
+                headers={"User-Agent": "VideoDubberStudio/1.2"}
+            )
+            with urllib.request.urlopen(req, timeout=5) as r:
+                tags_data = _json.loads(r.read())
+            if tags_data:
+                latest_tag = tags_data[0].get("name", "").lstrip("v").strip()
         except Exception:
             pass
 
-        # 2) Fallback: read tags list (works even when no formal Release is published)
-        if not latest_tag:
-            tags_data = fetch_json(f"https://api.github.com/repos/{GITHUB_REPO}/tags")
-            if tags_data:
-                latest_tag = tags_data[0].get("name", "").lstrip("v").strip()
-
-        update_available = False
-        if latest_tag:
+    update_available = False
+    if latest_tag:
+        try:
             curr_parts = [int(p) for p in APP_VERSION.split(".") if p.isdigit()]
             latest_parts = [int(p) for p in latest_tag.split(".") if p.isdigit()]
             update_available = latest_parts > curr_parts
+        except Exception:
+            pass
 
-        return jsonify({
-            "status": "ok",
-            "current_version": APP_VERSION,
-            "latest_version": latest_tag or APP_VERSION,
-            "has_update": update_available,
-            "update_available": update_available,
-            "download_url": html_url,
-            "release_notes": notes
-        })
-    except Exception as ex:
-        return jsonify({
-            "status": "error",
-            "current_version": APP_VERSION,
-            "latest_version": APP_VERSION,
-            "has_update": False,
-            "update_available": False,
-            "download_url": f"https://github.com/{GITHUB_REPO}/releases",
-            "message": str(ex)
-        })
+    result = {
+        "status": "ok",
+        "current_version": APP_VERSION,
+        "latest_version": latest_tag or APP_VERSION,
+        "has_update": update_available,
+        "update_available": update_available,
+        "download_url": html_url,
+        "release_notes": notes
+    }
+    _update_cache["result"] = result
+    _update_cache["expires"] = _time.time() + 300
+    return jsonify(result)
 
 
 JOBS = {}
+
 
 
 
