@@ -146,6 +146,13 @@ def check_update():
     except Exception:
         pass
 
+    # Also fetch release notes from RELEASE_NOTES.txt
+    try:
+        notes_url = f"https://raw.githubusercontent.com/{GITHUB_REPO}/{GITHUB_BRANCH}/RELEASE_NOTES.txt"
+        notes = fetch(notes_url)
+    except Exception:
+        pass
+
     # Method 2: GitHub Tags API (fallback)
     if not latest_tag:
         try:

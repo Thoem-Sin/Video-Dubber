@@ -248,6 +248,30 @@
             color: #9ca3af;
             text-align: center;
         }
+        .update-notes-box {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.07);
+            border-radius: 10px;
+            padding: 11px 14px;
+            max-height: 140px;
+            overflow-y: auto;
+        }
+        .update-notes-box::-webkit-scrollbar { width: 4px; }
+        .update-notes-box::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 4px; }
+        .update-notes-label {
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: #6b7280;
+            margin-bottom: 7px;
+        }
+        .update-notes-content {
+            font-size: 12.5px;
+            color: #d1d5db;
+            line-height: 1.6;
+            white-space: pre-wrap;
+            margin: 0;
+        }
         .update-modal-footer {
             display: flex;
             align-items: center;
@@ -362,6 +386,10 @@
                             </div>
                         </div>
                         <p class="update-status-text" id="uiUpdateBannerText">You are running the latest version.</p>
+                        <div class="update-notes-box hidden" id="uiReleaseNotesBox">
+                            <div class="update-notes-label">What's New</div>
+                            <p class="update-notes-content" id="uiReleaseNotes"></p>
+                        </div>
                     </div>
                 </div>
                 <div class="update-modal-footer">
@@ -1736,6 +1764,8 @@
             const latestChip = document.getElementById('uiLatestChip');
             const statusText = document.getElementById('uiUpdateBannerText');
             const dlBtn = document.getElementById('uiDownloadBtn');
+            const notesBox = document.getElementById('uiReleaseNotesBox');
+            const notesContent = document.getElementById('uiReleaseNotes');
 
             if (data.has_update) {
                 latestChip.classList.add('new-avail');
@@ -1752,6 +1782,14 @@
                 document.getElementById('updateModalTitle').textContent = 'Up to Date';
                 dlBtn.classList.add('hidden');
                 document.getElementById('updateBadgeDot').style.display = 'none';
+            }
+
+            // Show release notes if available
+            if (data.release_notes && data.release_notes.trim()) {
+                notesContent.textContent = data.release_notes.trim();
+                notesBox.classList.remove('hidden');
+            } else {
+                notesBox.classList.add('hidden');
             }
         }
 
