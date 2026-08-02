@@ -7,15 +7,21 @@ Write-Host "========================================================" -Foregroun
 Write-Host ""
 
 $tag = Read-Host "Enter new version tag (e.g. v1.2.2 or press ENTER to skip tag)"
-$notes = Read-Host "Enter short Release Notes summary"
 
-# Sanitize input strings to single line
-if ($tag) { $tag = ($tag -replace '[\r\n]', '').Trim() }
-if ($notes) { $notes = ($notes -replace '[\r\n]', ' ').Trim() }
+# Read multi-line Release Notes from RELEASE_NOTES.txt if available
+if (Test-Path "RELEASE_NOTES.txt") {
+    $notes = Get-Content "RELEASE_NOTES.txt" -Raw
+    Write-Host "📄 Loaded Release Notes from RELEASE_NOTES.txt" -ForegroundColor Green
+} else {
+    $notes = Read-Host "Enter short Release Notes summary"
+}
 
 if ([string]::IsNullOrWhiteSpace($notes)) {
     $notes = "Performance enhancements and bug fixes"
 }
+
+if ($tag) { $tag = ($tag -replace '[\r\n]', '').Trim() }
+
 
 
 Write-Host "`n[1/4] Staging modified files..." -ForegroundColor Yellow

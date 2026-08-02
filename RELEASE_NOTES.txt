@@ -1,0 +1,6 @@
+Release v1.2.2 Notes:
+- Fixed stuck alert toast bug by resuming popdown timer on mouseleave.
+- Removed thick left color bar from alert toasts for clean rounded style.
+- Set default alert toast duration to 2.0 seconds with smooth 60fps animations.
+- Positioned toast container below top navigation bar (top: 76px).
+- Filtered out routine update checks from Notification Bell dropdown.
