@@ -172,35 +172,50 @@ def check_update():
         with urllib.request.urlopen(req, timeout=6) as r:
             return r.read().decode("utf-8").strip()
 
-    # 1. Fetch GitHub Tags API (finds all release tags like v1.2.3)
+    # 1. Fetch GitHub Releases API - gives us real release notes per tag
+    releases_notes_map = {}  # tag_name (without v) -> release body
     try:
         import json as _json
         req = urllib.request.Request(
-            f"https://api.github.com/repos/{GITHUB_REPO}/tags",
+            f"https://api.github.com/repos/{GITHUB_REPO}/releases",
             headers={"User-Agent": "VideoDubberStudio/1.2"}
         )
         with urllib.request.urlopen(req, timeout=5) as r:
-            tags_data = _json.loads(r.read())
-        for t in tags_data:
-            tag_name = t.get("name", "").strip().lstrip("v")
-            if tag_name:
-                found_versions.append(tag_name)
+            releases_data = _json.loads(r.read())
+        for rel in releases_data:
+            tag = rel.get("tag_name", "").strip().lstrip("v")
+            body = (rel.get("body") or "").strip()
+            if tag:
+                releases_notes_map[tag] = body
+                found_versions.append(tag)
     except Exception:
         pass
 
-    # 2. Read version.txt from raw.githubusercontent.com
+    # 2. Also check GitHub Tags API (catches tags that have no formal Release)
+    if not found_versions:
+        try:
+            import json as _json
+            req = urllib.request.Request(
+                f"https://api.github.com/repos/{GITHUB_REPO}/tags",
+                headers={"User-Agent": "VideoDubberStudio/1.2"}
+            )
+            with urllib.request.urlopen(req, timeout=5) as r:
+                tags_data = _json.loads(r.read())
+            for t in tags_data:
+                tag_name = t.get("name", "").strip().lstrip("v")
+                if tag_name:
+                    found_versions.append(tag_name)
+        except Exception:
+            pass
+
+    # 3. Read version.txt from raw.githubusercontent.com
     try:
         raw_url = f"https://raw.githubusercontent.com/{GITHUB_REPO}/{GITHUB_BRANCH}/version.txt"
-        v_txt = fetch(raw_url).splitlines()[0].strip().lstrip("v")
+        req = urllib.request.Request(raw_url, headers={"User-Agent": "VideoDubberStudio/1.2"})
+        with urllib.request.urlopen(req, timeout=6) as r:
+            v_txt = r.read().decode("utf-8").strip().splitlines()[0].strip().lstrip("v")
         if v_txt:
             found_versions.append(v_txt)
-    except Exception:
-        pass
-
-    # 3. Fetch release notes from RELEASE_NOTES.txt
-    try:
-        notes_url = f"https://raw.githubusercontent.com/{GITHUB_REPO}/{GITHUB_BRANCH}/RELEASE_NOTES.txt"
-        notes = fetch(notes_url)
     except Exception:
         pass
 
@@ -208,6 +223,9 @@ def check_update():
     highest_tag = curr_ver
     if found_versions:
         highest_tag = max(found_versions, key=_parse_version_tuple)
+
+    # Get release notes for the latest version from GitHub Releases API
+    notes = releases_notes_map.get(highest_tag, "")
 
     curr_tuple = _parse_version_tuple(curr_ver)
     latest_tuple = _parse_version_tuple(highest_tag)
@@ -348,11 +366,37 @@ def install_update():
 
 @app.route("/api/version_history", methods=["GET"])
 def get_version_history():
-    """Returns a list of all release versions/tags available in the repository for version switching/downgrading."""
+    """Returns all release versions with their actual release notes fetched from GitHub Releases API."""
     import urllib.request
     import json as _json
 
-    tags = []
+    releases = []  # list of {tag, version, notes}
+    releases_map = {}  # version -> notes
+
+    # 1. Fetch GitHub Releases API (has real per-release notes in 'body')
+    try:
+        req = urllib.request.Request(
+            f"https://api.github.com/repos/{GITHUB_REPO}/releases",
+            headers={"User-Agent": "VideoDubberStudio/1.2"}
+        )
+        with urllib.request.urlopen(req, timeout=8) as r:
+            releases_data = _json.loads(r.read())
+        for rel in releases_data:
+            tag_name = rel.get("tag_name", "").strip()
+            if not tag_name:
+                continue
+            clean_ver = tag_name.lstrip("vV")
+            body = (rel.get("body") or "").strip()
+            releases_map[clean_ver] = body
+            releases.append({
+                "tag": tag_name if tag_name.startswith("v") else f"v{clean_ver}",
+                "version": clean_ver,
+                "notes": body
+            })
+    except Exception:
+        pass
+
+    # 2. Also call Tags API to pick up tags without a formal GitHub Release
     try:
         req = urllib.request.Request(
             f"https://api.github.com/repos/{GITHUB_REPO}/tags",
@@ -360,32 +404,34 @@ def get_version_history():
         )
         with urllib.request.urlopen(req, timeout=6) as r:
             tags_data = _json.loads(r.read())
-            for t in tags_data:
-                name = t.get("name", "").strip()
-                if name:
-                    clean_ver = name.lstrip("vV")
-                    tags.append({
-                        "tag": name if name.startswith("v") else f"v{clean_ver}",
-                        "version": clean_ver
-                    })
+        existing_vers = {r["version"] for r in releases}
+        for t in tags_data:
+            name = t.get("name", "").strip()
+            if not name:
+                continue
+            clean_ver = name.lstrip("vV")
+            if clean_ver not in existing_vers:
+                releases.append({
+                    "tag": name if name.startswith("v") else f"v{clean_ver}",
+                    "version": clean_ver,
+                    "notes": releases_map.get(clean_ver, "")
+                })
+                existing_vers.add(clean_ver)
     except Exception:
         pass
 
-    # Ensure current version and standard fallback versions are included
+    # 3. Ensure current version is always present
     curr_v = get_app_version()
-    known_versions = [curr_v, "1.2.3", "1.2.2", "1.2.1", "1.2.0"]
-    existing_vers = {t["version"] for t in tags}
-    for kv in known_versions:
-        if kv and kv not in existing_vers:
-            tags.append({"tag": f"v{kv}", "version": kv})
-            existing_vers.add(kv)
+    existing_vers = {r["version"] for r in releases}
+    if curr_v and curr_v not in existing_vers:
+        releases.append({"tag": f"v{curr_v}", "version": curr_v, "notes": ""})
 
     # Sort descending by version tuple
-    tags.sort(key=lambda x: _parse_version_tuple(x["version"]), reverse=True)
+    releases.sort(key=lambda x: _parse_version_tuple(x["version"]), reverse=True)
     return jsonify({
         "status": "ok",
         "current_version": curr_v,
-        "versions": tags
+        "versions": releases
     })
 
 
