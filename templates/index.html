@@ -2187,10 +2187,13 @@
                 .catch(() => {});
         }
 
+        let _versionHistoryCache = [];
+
         /* ─── Version History & Downgrade Manager ───────────────────────── */
         function loadVersionHistory() {
             const selectEl = document.getElementById('downgradeVersionSelect');
             const badgeEl = document.getElementById('prefCurrentVerBadge');
+            const historyList = document.getElementById('fullReleaseHistoryList');
             if (!selectEl) return;
 
             selectEl.innerHTML = '<option value="" disabled selected>Loading release history...</option>';
@@ -2203,6 +2206,7 @@
                             badgeEl.textContent = 'v' + data.current_version;
                         }
                         const versions = data.versions || [];
+                        _versionHistoryCache = versions;
                         selectEl.innerHTML = '';
 
                         versions.forEach(v => {
@@ -2213,11 +2217,53 @@
                             if (isCurrent) opt.selected = true;
                             selectEl.appendChild(opt);
                         });
+
+                        // Trigger notes display for default selected item
+                        if (selectEl.value) {
+                            onDowngradeVersionChange(selectEl.value);
+                        }
+
+                        // Render Complete Version Release History list
+                        if (historyList) {
+                            historyList.innerHTML = versions.map(v => {
+                                const formattedNotes = formatReleaseNotesItems(v.notes);
+                                const isCurrent = v.version === data.current_version;
+                                return `
+                                    <div style="background: rgba(15, 23, 42, 0.7); border: 1px solid rgba(255,255,255,0.07); border-radius: 10px; padding: 12px 14px;">
+                                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                                            <span style="font-size: 13px; font-weight: 700; color: #fff; display: flex; align-items: center; gap: 6px;">
+                                                <i class="fa-solid fa-tag" style="color: #6366f1; font-size: 11px;"></i> v${v.version}
+                                            </span>
+                                            ${isCurrent ? '<span style="background: rgba(16, 185, 129, 0.2); color: #34d399; font-size: 10.5px; font-weight: 700; padding: 2px 8px; border-radius: 10px; border: 1px solid rgba(16,185,129,0.3);">Current</span>' : ''}
+                                        </div>
+                                        <div class="update-notes-list" style="max-height: none;">
+                                            ${formattedNotes}
+                                        </div>
+                                    </div>
+                                `;
+                            }).join('');
+                        }
                     }
                 })
                 .catch(() => {
                     selectEl.innerHTML = '<option value="1.2.3">v1.2.3 (Latest)</option><option value="1.2.2">v1.2.2</option><option value="1.2.1">v1.2.1</option><option value="1.2.0">v1.2.0</option>';
                 });
+        }
+
+        function onDowngradeVersionChange(selectedVer) {
+            const notesBox = document.getElementById('selectedVersionNotesBox');
+            const notesHeader = document.getElementById('selectedVersionNotesHeader');
+            const notesContainer = document.getElementById('selectedVersionNotes');
+            if (!notesBox || !notesContainer) return;
+
+            const target = _versionHistoryCache.find(v => v.version === selectedVer);
+            if (target && target.notes) {
+                if (notesHeader) notesHeader.textContent = `RELEASE NOTES FOR V${selectedVer}`;
+                notesContainer.innerHTML = formatReleaseNotesItems(target.notes);
+                notesBox.classList.remove('hidden');
+            } else {
+                notesBox.classList.add('hidden');
+            }
         }
 
         let _pendingSwitchVersion = null;
