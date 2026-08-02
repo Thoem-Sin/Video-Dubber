@@ -115,7 +115,18 @@ def get_gpu_status():
         "ffmpeg_encoder": caps["ffmpeg_encoder"]
     })
 
-APP_VERSION = "1.2.1"
+def get_app_version():
+    """Reads current version dynamically from version.txt on disk."""
+    v_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), "version.txt")
+    if os.path.exists(v_file):
+        try:
+            with open(v_file, "r", encoding="utf-8") as f:
+                v = f.read().strip().lstrip("v")
+                if v:
+                    return v
+        except Exception:
+            pass
+    return "1.2.2"
 
 GITHUB_REPO = "thoem-sin/video-dubber"
 GITHUB_BRANCH = "main"
@@ -131,6 +142,7 @@ def check_update():
     if _update_cache["result"] and _time.time() < _update_cache["expires"]:
         return jsonify(_update_cache["result"])
 
+    curr_ver = get_app_version()
     latest_tag = ""
     html_url = f"https://github.com/{GITHUB_REPO}/releases"
     notes = ""
@@ -172,7 +184,7 @@ def check_update():
     update_available = False
     if latest_tag:
         try:
-            curr_parts = [int(p) for p in APP_VERSION.split(".") if p.isdigit()]
+            curr_parts = [int(p) for p in curr_ver.split(".") if p.isdigit()]
             latest_parts = [int(p) for p in latest_tag.split(".") if p.isdigit()]
             update_available = latest_parts > curr_parts
         except Exception:
@@ -180,8 +192,8 @@ def check_update():
 
     result = {
         "status": "ok",
-        "current_version": APP_VERSION,
-        "latest_version": latest_tag or APP_VERSION,
+        "current_version": curr_ver,
+        "latest_version": latest_tag or curr_ver,
         "has_update": update_available,
         "update_available": update_available,
         "download_url": html_url,
@@ -2195,105 +2207,6 @@ def download_file(job_id, file_type):
         download_name=filename,
         mimetype=mimetype
     )
-
-# ─── ONLINE VERSION & UPDATE CHECK ENDPOINTS ────────────────────────────────
-APP_VERSION = "1.2.0"
-
-# ── Set USE_LOCAL_TEST_DATA = True to test with the simulated v1.3.0 response
-# ── Set USE_LOCAL_TEST_DATA = False + set VERSION_CHECK_URL for real production
-USE_LOCAL_TEST_DATA = True
-VERSION_CHECK_URL = "https://raw.githubusercontent.com/SEN/Video_Dubber_Studio/main/version.json"
-
-def _get_local_test_version_data():
-    """Returns simulated remote version data for testing the update feature locally."""
-    return {
-        "version": "1.3.0",
-        "release_notes": (
-            "v1.3.0 — What's New:\n"
-            "• Single-line subtitle rendering: captions now always display on one line\n"
-            "• Online version update checker with release notes\n"
-            "• Improved batch processing performance\n"
-            "• Fixed Khmer font rendering edge cases\n"
-            "• UI polish: unified button styles across all modals"
-        ),
-        "download_url": "https://github.com/SEN/Video_Dubber_Studio/releases"
-    }
-
-@app.route("/api/local_version_info", methods=["GET"])
-def local_version_info():
-    """Endpoint that exposes the local test version data (for manual inspection)."""
-    return jsonify(_get_local_test_version_data())
-
-
-@app.route("/api/version", methods=["GET"])
-def get_app_version():
-    """Returns local app version info."""
-    return jsonify({
-        "ok": True,
-        "version": APP_VERSION,
-        "app_name": "AutoVideoDubber Studio PRO"
-    })
-
-@app.route("/api/check_update", methods=["GET", "POST"])
-def check_online_update():
-    """Check online server/GitHub for newer versions of Video Dubber Studio."""
-
-    def parse_ver(v):
-        try:
-            return tuple(map(int, v.lstrip("vV").split(".")))
-        except Exception:
-            return (0,)
-
-    def build_response(remote_data):
-        latest_ver = remote_data.get("version", APP_VERSION)
-        rel_notes = remote_data.get("release_notes", "Latest performance and feature enhancements.")
-        dl_url = remote_data.get("download_url", "https://github.com/SEN/Video_Dubber_Studio/releases")
-        has_update = parse_ver(latest_ver) > parse_ver(APP_VERSION)
-        return jsonify({
-            "ok": True,
-            "current_version": APP_VERSION,
-            "latest_version": latest_ver,
-            "has_update": has_update,
-            "release_notes": rel_notes,
-            "download_url": dl_url,
-            "status": "online" if has_update else "up_to_date"
-        })
-
-    try:
-        # ── TEST MODE: use local simulated data (no HTTP self-loop) ──────────
-        if USE_LOCAL_TEST_DATA:
-            remote_data = _get_local_test_version_data()
-            return build_response(remote_data)
-
-        # ── PRODUCTION MODE: fetch from remote GitHub URL ─────────────────────
-        import urllib.request
-        import json as json_lib
-        req = urllib.request.Request(
-            VERSION_CHECK_URL,
-            headers={"User-Agent": "VideoDubberStudio-Updater/1.0"}
-        )
-        try:
-            with urllib.request.urlopen(req, timeout=5) as resp:
-                if resp.status == 200:
-                    remote_data = json_lib.loads(resp.read().decode("utf-8"))
-                    return build_response(remote_data)
-        except Exception as net_err:
-            print(f"[UpdateCheck] Remote fetch notice: {net_err}")
-
-    except Exception as e:
-        print(f"[UpdateCheck] General error: {e}")
-
-    # Fallback: already on latest
-    return jsonify({
-        "ok": True,
-        "current_version": APP_VERSION,
-        "latest_version": APP_VERSION,
-        "has_update": False,
-        "release_notes": "You are using the latest version of AutoVideoDubber Studio PRO.",
-        "download_url": "https://github.com/SEN/Video_Dubber_Studio",
-        "status": "up_to_date"
-    })
-
 
 
 if __name__ == "__main__":
