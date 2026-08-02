@@ -143,35 +143,79 @@
             50% { box-shadow: 0 0 14px 5px rgba(139,92,246,1); }
         }
         .update-modal-card {
-            max-width: 380px;
+            max-width: 440px;
             width: 94%;
             padding: 0;
-            border-radius: 18px;
+            border-radius: 22px;
             overflow: hidden;
-            animation: updateModalIn 0.28s cubic-bezier(0.34,1.56,0.64,1);
+            background: rgba(17, 24, 39, 0.95);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6);
+            animation: updateModalIn 0.28s cubic-bezier(0.34, 1.56, 0.64, 1);
         }
         @keyframes updateModalIn {
-            from { opacity: 0; transform: scale(0.88) translateY(20px); }
+            from { opacity: 0; transform: scale(0.9) translateY(18px); }
             to   { opacity: 1; transform: scale(1) translateY(0); }
         }
         .update-modal-header {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 18px 20px 14px;
-            border-bottom: 1px solid rgba(255,255,255,0.07);
+            padding: 20px 22px 16px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+        }
+        .update-header-left {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+        .update-modal-icon-box {
+            position: relative;
+            width: 44px;
+            height: 44px;
+            border-radius: 14px;
+            background: linear-gradient(135deg, rgba(99,102,241,0.15), rgba(139,92,246,0.25));
+            border: 1px solid rgba(139,92,246,0.3);
+            color: #a78bfa;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            flex-shrink: 0;
+        }
+        .update-icon-badge-dot {
+            position: absolute;
+            top: -2px;
+            right: -2px;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #10b981;
+            box-shadow: 0 0 8px #10b981;
+        }
+        .update-header-titles {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+        .update-modal-category {
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: #10b981;
         }
         .update-modal-title {
             margin: 0;
-            font-size: 15px;
+            font-size: 17px;
             font-weight: 700;
-            color: #f3f4f6;
+            color: #f9fafb;
         }
         .modal-close-x {
             background: none;
             border: none;
             color: #6b7280;
-            font-size: 20px;
+            font-size: 22px;
             cursor: pointer;
             line-height: 1;
             transition: color 0.2s;
@@ -179,10 +223,10 @@
         }
         .modal-close-x:hover { color: #f3f4f6; }
         .update-modal-body {
-            padding: 20px;
+            padding: 20px 22px;
             display: flex;
             flex-direction: column;
-            gap: 14px;
+            gap: 16px;
         }
         .update-checking-state {
             display: flex;
@@ -205,86 +249,175 @@
             flex-direction: column;
             gap: 14px;
         }
-        .update-version-row {
+        /* Version track row */
+        .update-version-track-row {
             display: flex;
             align-items: center;
+            justify-content: space-between;
             gap: 10px;
+            margin-bottom: 2px;
         }
-        .update-version-chip {
-            flex: 1;
-            background: rgba(255,255,255,0.04);
-            border: 1px solid rgba(255,255,255,0.08);
-            border-radius: 10px;
-            padding: 10px 12px;
-            text-align: center;
-        }
-        .update-version-chip.latest.new-avail {
-            background: rgba(16,185,129,0.08);
-            border-color: rgba(16,185,129,0.3);
-        }
-        .update-ver-label {
-            display: block;
-            font-size: 10px;
-            text-transform: uppercase;
-            letter-spacing: 0.08em;
-            color: #6b7280;
-            margin-bottom: 4px;
-        }
-        .update-ver-val {
-            display: block;
-            font-size: 17px;
-            font-weight: 700;
-            color: #e5e7eb;
+        .update-ver-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            border-radius: 20px;
             font-family: 'JetBrains Mono', monospace;
-        }
-        .update-arrow {
-            color: #4b5563;
-            font-size: 13px;
-            flex-shrink: 0;
-        }
-        .update-status-text {
-            margin: 0;
-            font-size: 13px;
+            font-size: 13.5px;
+            font-weight: 600;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.09);
             color: #9ca3af;
-            text-align: center;
         }
-        .update-notes-box {
-            background: rgba(255,255,255,0.03);
-            border: 1px solid rgba(255,255,255,0.07);
-            border-radius: 10px;
-            padding: 11px 14px;
-            max-height: 140px;
-            overflow-y: auto;
+        .update-ver-pill.latest.highlight {
+            background: linear-gradient(135deg, #10b981, #059669);
+            border-color: rgba(16, 185, 129, 0.4);
+            color: #ffffff;
+            box-shadow: 0 4px 14px rgba(16, 185, 129, 0.35);
         }
-        .update-notes-box::-webkit-scrollbar { width: 4px; }
-        .update-notes-box::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 4px; }
-        .update-notes-label {
-            font-size: 10px;
-            text-transform: uppercase;
-            letter-spacing: 0.08em;
-            color: #6b7280;
-            margin-bottom: 7px;
+        .update-ver-pill .ver-icon {
+            font-size: 12px;
+            opacity: 0.85;
         }
-        .update-notes-content {
-            font-size: 12.5px;
-            color: #d1d5db;
-            line-height: 1.6;
-            white-space: pre-wrap;
-            margin: 0;
+        .update-track-connector {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
         }
-        .update-modal-footer {
+        .update-track-connector .track-line {
+            flex: 1;
+            height: 1px;
+            background: linear-gradient(90deg, rgba(255,255,255,0.06), rgba(16,185,129,0.3), rgba(255,255,255,0.06));
+        }
+        .update-track-connector .track-chevrons {
+            color: #10b981;
+            font-size: 13px;
+            font-weight: 700;
+            letter-spacing: -2px;
+        }
+        /* What's New Container & Items */
+        .update-notes-container {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.07);
+            border-radius: 16px;
+            padding: 14px 16px;
+        }
+        .update-notes-header {
             display: flex;
             align-items: center;
             gap: 8px;
-            padding: 12px 20px 18px;
-            border-top: 1px solid rgba(255,255,255,0.06);
+            font-size: 10.5px;
+            font-weight: 700;
+            letter-spacing: 0.09em;
+            color: #10b981;
+            text-transform: uppercase;
+            margin-bottom: 12px;
         }
-        .update-dl-btn {
+        .update-notes-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            max-height: 170px;
+            overflow-y: auto;
+            padding-right: 4px;
+        }
+        .update-notes-list::-webkit-scrollbar { width: 4px; }
+        .update-notes-list::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radius: 4px; }
+
+        .note-item-row {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+        }
+        .note-item-icon-box {
+            width: 26px;
+            height: 26px;
+            border-radius: 8px;
+            background: rgba(99, 102, 241, 0.12);
+            color: #a78bfa;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            flex-shrink: 0;
+            margin-top: 1px;
+        }
+        .note-item-content {
+            display: flex;
+            align-items: baseline;
+            flex-wrap: wrap;
+            gap: 6px;
+            font-size: 12.5px;
+            line-height: 1.5;
+            color: #d1d5db;
+        }
+        .note-badge {
+            display: inline-block;
+            font-size: 9.5px;
+            font-weight: 800;
+            letter-spacing: 0.05em;
+            padding: 2px 7px;
+            border-radius: 5px;
+            text-transform: uppercase;
+        }
+        .note-badge.badge-new, .note-badge.badge-added {
+            background: rgba(16, 185, 129, 0.15);
+            color: #34d399;
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+        .note-badge.badge-fixed {
+            background: rgba(245, 158, 11, 0.15);
+            color: #fbbf24;
+            border: 1px solid rgba(245, 158, 11, 0.3);
+        }
+        .note-badge.badge-updated {
+            background: rgba(99, 102, 241, 0.15);
+            color: #a78bfa;
+            border: 1px solid rgba(99, 102, 241, 0.3);
+        }
+        /* Footer buttons */
+        .update-modal-footer {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 14px 22px 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.06);
+        }
+        .update-btn-later {
+            flex: 1;
+            height: 42px;
+            border-radius: 12px;
+            font-size: 13.5px;
+            font-weight: 600;
+            background: rgba(255, 255, 255, 0.06) !important;
+            border: 1px solid rgba(255, 255, 255, 0.09) !important;
+            color: #d1d5db !important;
+        }
+        .update-btn-later:hover {
+            background: rgba(255, 255, 255, 0.1) !important;
+            color: #ffffff !important;
+        }
+        .update-btn-download {
+            flex: 1.2;
+            height: 42px;
+            border-radius: 12px;
+            font-size: 13.5px;
+            font-weight: 700;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
             background: linear-gradient(135deg, #10b981, #059669) !important;
-            border-color: transparent !important;
+            border: none !important;
+            color: #ffffff !important;
+            box-shadow: 0 4px 14px rgba(16, 185, 129, 0.35);
         }
-        .update-dl-btn:hover {
+        .update-btn-download:hover {
             background: linear-gradient(135deg, #34d399, #10b981) !important;
+            box-shadow: 0 6px 18px rgba(16, 185, 129, 0.45);
         }
     </style>
 </head>
@@ -365,7 +498,16 @@
         <div class="modal-backdrop hidden" id="updateModalBackdrop" onclick="closeUpdateModal(event)">
             <div class="modal-card update-modal-card glass" id="updateModalCard">
                 <div class="update-modal-header">
-                    <h3 class="update-modal-title" id="updateModalTitle">Check for Updates</h3>
+                    <div class="update-header-left">
+                        <div class="update-modal-icon-box" id="updateModalIconWrap">
+                            <span class="update-icon-badge-dot"></span>
+                            <i class="fa-solid fa-cloud-arrow-up" id="updateModalIcon"></i>
+                        </div>
+                        <div class="update-header-titles">
+                            <span class="update-modal-category">SOFTWARE UPDATE</span>
+                            <h3 class="update-modal-title" id="updateModalTitle">New Version Available</h3>
+                        </div>
+                    </div>
                     <button class="modal-close-x" onclick="closeUpdateModal()" title="Close">&times;</button>
                 </div>
                 <div class="update-modal-body" id="updateModalBody">
@@ -374,28 +516,37 @@
                         <span>Checking for updates<span class="splash-dots"><span>.</span><span>.</span><span>.</span></span></span>
                     </div>
                     <div class="update-result-state hidden" id="updateResultState">
-                        <div class="update-version-row">
-                            <div class="update-version-chip current">
-                                <span class="update-ver-label">Current</span>
-                                <span class="update-ver-val" id="uiCurrentVer">—</span>
+                        <div class="update-version-track-row">
+                            <div class="update-ver-pill current">
+                                <i class="fa-solid fa-cube ver-icon"></i>
+                                <span id="uiCurrentVer">v1.2.0</span>
                             </div>
-                            <i class="fa-solid fa-arrow-right update-arrow"></i>
-                            <div class="update-version-chip latest" id="uiLatestChip">
-                                <span class="update-ver-label">Latest</span>
-                                <span class="update-ver-val" id="uiLatestVer">—</span>
+                            <div class="update-track-connector">
+                                <span class="track-line"></span>
+                                <span class="track-chevrons">»</span>
+                                <span class="track-line"></span>
+                            </div>
+                            <div class="update-ver-pill latest highlight" id="uiLatestChip">
+                                <i class="fa-solid fa-wand-magic-sparkles ver-icon"></i>
+                                <span id="uiLatestVer">v1.2.2</span>
                             </div>
                         </div>
-                        <p class="update-status-text" id="uiUpdateBannerText">You are running the latest version.</p>
-                        <div class="update-notes-box hidden" id="uiReleaseNotesBox">
-                            <div class="update-notes-label">What's New</div>
-                            <p class="update-notes-content" id="uiReleaseNotes"></p>
+
+                        <div class="update-notes-container" id="uiReleaseNotesBox">
+                            <div class="update-notes-header">
+                                <i class="fa-regular fa-file-lines notes-header-icon"></i>
+                                <span>WHAT'S NEW</span>
+                            </div>
+                            <div class="update-notes-list" id="uiReleaseNotes">
+                                <!-- Rendered by JS -->
+                            </div>
                         </div>
                     </div>
                 </div>
                 <div class="update-modal-footer">
-                    <button class="btn btn-secondary" onclick="closeUpdateModal()">Close</button>
-                    <a class="btn btn-primary update-dl-btn hidden" id="uiDownloadBtn" href="#" target="_blank">
-                        <i class="fa-solid fa-download"></i> Download Update
+                    <button class="btn btn-secondary update-btn-later" onclick="closeUpdateModal()">Maybe Later</button>
+                    <a class="btn btn-primary update-btn-download hidden" id="uiDownloadBtn" href="#" target="_blank">
+                        <i class="fa-solid fa-cloud-arrow-down"></i> Download & Install
                     </a>
                 </div>
             </div>
@@ -1762,35 +1913,73 @@
             document.getElementById('uiLatestVer').textContent = 'v' + (data.latest_version || '—');
 
             const latestChip = document.getElementById('uiLatestChip');
-            const statusText = document.getElementById('uiUpdateBannerText');
             const dlBtn = document.getElementById('uiDownloadBtn');
             const notesBox = document.getElementById('uiReleaseNotesBox');
-            const notesContent = document.getElementById('uiReleaseNotes');
+            const notesList = document.getElementById('uiReleaseNotes');
 
             if (data.has_update) {
-                latestChip.classList.add('new-avail');
-                statusText.textContent = 'A new version is available!';
-                document.getElementById('updateModalTitle').textContent = 'Update Available';
+                latestChip.classList.add('highlight');
+                document.getElementById('updateModalTitle').textContent = 'New Version Available';
                 if (data.download_url) {
                     dlBtn.href = data.download_url;
                     dlBtn.classList.remove('hidden');
                 }
                 document.getElementById('updateBadgeDot').style.display = 'block';
             } else {
-                latestChip.classList.remove('new-avail');
-                statusText.textContent = 'You are running the latest version.';
-                document.getElementById('updateModalTitle').textContent = 'Up to Date';
+                latestChip.classList.remove('highlight');
+                document.getElementById('updateModalTitle').textContent = 'Software Up to Date';
                 dlBtn.classList.add('hidden');
                 document.getElementById('updateBadgeDot').style.display = 'none';
             }
 
-            // Show release notes if available
+            // Format itemized release notes
             if (data.release_notes && data.release_notes.trim()) {
-                notesContent.textContent = data.release_notes.trim();
+                notesList.innerHTML = formatReleaseNotesItems(data.release_notes);
                 notesBox.classList.remove('hidden');
             } else {
                 notesBox.classList.add('hidden');
             }
+        }
+
+        function formatReleaseNotesItems(text) {
+            if (!text || !text.trim()) return '';
+            const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+            return lines.map(line => {
+                let clean = line.replace(/^[•\-\*]\s*/, '').trim();
+                let badgeType = 'NEW';
+                let badgeClass = 'badge-new';
+                let iconClass = 'fa-solid fa-layer-group';
+
+                const lower = clean.toLowerCase();
+                if (lower.includes('fix') || lower.includes('bug') || lower.includes('stuck') || lower.includes('popdown')) {
+                    badgeType = 'FIXED';
+                    badgeClass = 'badge-fixed';
+                    iconClass = 'fa-solid fa-wrench';
+                } else if (lower.includes('add') || lower.includes('new') || lower.includes('support')) {
+                    badgeType = 'ADDED';
+                    badgeClass = 'badge-added';
+                    iconClass = 'fa-solid fa-box-archive';
+                } else if (lower.includes('update') || lower.includes('optimize') || lower.includes('smooth') || lower.includes('perform')) {
+                    badgeType = 'UPDATED';
+                    badgeClass = 'badge-updated';
+                    iconClass = 'fa-solid fa-sliders';
+                }
+
+                // Escape HTML characters safely
+                const safeText = clean.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+                return `
+                    <div class="note-item-row">
+                        <div class="note-item-icon-box">
+                            <i class="${iconClass}"></i>
+                        </div>
+                        <div class="note-item-content">
+                            <span class="note-badge ${badgeClass}">${badgeType}</span>
+                            <span class="note-text">${safeText}</span>
+                        </div>
+                    </div>
+                `;
+            }).join('');
         }
 
         function silentCheckForUpdates() {
