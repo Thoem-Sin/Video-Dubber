@@ -394,11 +394,36 @@
             color: #ffffff !important;
             box-shadow: 0 2px 10px rgba(16, 185, 129, 0.3) !important;
         }
-        .update-modal-footer .update-modal-btn.btn-download:hover {
+        .update-modal-footer .update-modal-btn.btn-download:hover:not(:disabled) {
             background: linear-gradient(135deg, #34d399, #10b981) !important;
             box-shadow: 0 3px 14px rgba(16, 185, 129, 0.4) !important;
         }
+        .update-modal-footer .update-modal-btn.btn-download.btn-installing {
+            background: linear-gradient(135deg, #374151, #4b5563) !important;
+            box-shadow: none !important;
+            cursor: not-allowed !important;
+            opacity: 0.85 !important;
+        }
+        .update-modal-footer .update-modal-btn.btn-download.btn-error {
+            background: linear-gradient(135deg, #ef4444, #dc2626) !important;
+            box-shadow: 0 2px 10px rgba(239, 68, 68, 0.3) !important;
+        }
+        .update-modal-footer .update-modal-btn.btn-restart {
+            background: linear-gradient(135deg, #6366f1, #4f46e5) !important;
+            border: 1px solid transparent !important;
+            color: #ffffff !important;
+            box-shadow: 0 2px 10px rgba(99, 102, 241, 0.35) !important;
+        }
+        .update-modal-footer .update-modal-btn.btn-restart:hover:not(:disabled) {
+            background: linear-gradient(135deg, #818cf8, #6366f1) !important;
+            box-shadow: 0 3px 14px rgba(99, 102, 241, 0.45) !important;
+        }
+        .update-modal-footer .update-modal-btn:disabled {
+            opacity: 0.55 !important;
+            cursor: not-allowed !important;
+        }
     </style>
+
 </head>
 
 <body>
@@ -523,10 +548,15 @@
                     </div>
                 </div>
                 <div class="update-modal-footer">
-                    <button type="button" class="update-modal-btn btn-later" onclick="closeUpdateModal()">Maybe Later</button>
-                    <a class="update-modal-btn btn-download hidden" id="uiDownloadBtn" href="#" target="_blank">
-                        <i class="fa-solid fa-cloud-arrow-down"></i> Download & Install
-                    </a>
+                    <button type="button" class="update-modal-btn btn-later" id="uiBtnLater" onclick="closeUpdateModal()">Maybe Later</button>
+                    <button type="button" class="update-modal-btn btn-download hidden" id="uiDownloadBtn" onclick="installUpdate()">
+                        <i class="fa-solid fa-cloud-arrow-down" id="uiInstallIcon"></i>
+                        <span id="uiInstallLabel">Download &amp; Install</span>
+                    </button>
+                    <button type="button" class="update-modal-btn btn-restart hidden" id="uiRestartBtn" onclick="restartApp()">
+                        <i class="fa-solid fa-rotate-right"></i>
+                        <span>Restart Now</span>
+                    </button>
                 </div>
             </div>
         </div>
@@ -1899,10 +1929,9 @@
             if (data.has_update) {
                 latestChip.classList.add('highlight');
                 document.getElementById('updateModalTitle').textContent = 'New Version Available';
-                if (data.download_url) {
-                    dlBtn.href = data.download_url;
-                    dlBtn.classList.remove('hidden');
-                }
+                dlBtn.classList.remove('hidden');
+                document.getElementById('uiRestartBtn').classList.add('hidden');
+                resetInstallBtn();
                 if (document.getElementById('updateBadgeDot')) {
                     document.getElementById('updateBadgeDot').style.display = 'block';
                 }
@@ -1937,6 +1966,93 @@
                     </div>
                 `;
             }).join('');
+        }
+
+        /* ─── In-App Auto Installer ────────────────────────────────────── */
+        function resetInstallBtn() {
+            const btn = document.getElementById('uiDownloadBtn');
+            const icon = document.getElementById('uiInstallIcon');
+            const label = document.getElementById('uiInstallLabel');
+            if (!btn) return;
+            btn.disabled = false;
+            btn.classList.remove('btn-installing', 'btn-error');
+            icon.className = 'fa-solid fa-cloud-arrow-down';
+            label.textContent = 'Download & Install';
+        }
+
+        function installUpdate() {
+            const btn = document.getElementById('uiDownloadBtn');
+            const icon = document.getElementById('uiInstallIcon');
+            const label = document.getElementById('uiInstallLabel');
+            const laterBtn = document.getElementById('uiBtnLater');
+
+            // Show installing state
+            btn.disabled = true;
+            btn.classList.add('btn-installing');
+            icon.className = 'fa-solid fa-spinner fa-spin';
+            label.textContent = 'Installing...';
+            if (laterBtn) laterBtn.disabled = true;
+
+            fetch('/api/install_update', { method: 'POST' })
+                .then(r => r.json())
+                .then(res => {
+                    if (res.status === 'ok') {
+                        if (res.already_up_to_date) {
+                            // Already latest
+                            icon.className = 'fa-solid fa-circle-check';
+                            label.textContent = 'Already Up to Date';
+                            btn.disabled = false;
+                            btn.classList.remove('btn-installing');
+                            if (laterBtn) laterBtn.disabled = false;
+                        } else {
+                            // Success — show restart button
+                            btn.classList.add('hidden');
+                            document.getElementById('uiRestartBtn').classList.remove('hidden');
+                            if (laterBtn) laterBtn.disabled = false;
+                            document.getElementById('updateModalTitle').textContent = 'Update Installed!';
+                            if (typeof showToast === 'function') {
+                                showToast('✅ Update applied! Restart the app to use the new version.', 'success');
+                            }
+                        }
+                    } else {
+                        // Error
+                        btn.disabled = false;
+                        btn.classList.remove('btn-installing');
+                        btn.classList.add('btn-error');
+                        icon.className = 'fa-solid fa-triangle-exclamation';
+                        label.textContent = 'Update Failed';
+                        if (laterBtn) laterBtn.disabled = false;
+                        if (typeof showToast === 'function') {
+                            showToast('❌ Update failed: ' + (res.message || 'Unknown error'), 'error');
+                        }
+                        setTimeout(resetInstallBtn, 3000);
+                    }
+                })
+                .catch(err => {
+                    btn.disabled = false;
+                    btn.classList.remove('btn-installing');
+                    btn.classList.add('btn-error');
+                    icon.className = 'fa-solid fa-triangle-exclamation';
+                    label.textContent = 'Update Failed';
+                    if (laterBtn) laterBtn.disabled = false;
+                    if (typeof showToast === 'function') {
+                        showToast('❌ Network error during update. Check your connection.', 'error');
+                    }
+                    setTimeout(resetInstallBtn, 3000);
+                });
+        }
+
+        function restartApp() {
+            const btn = document.getElementById('uiRestartBtn');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> <span>Restarting...</span>';
+            fetch('/api/restart_app', { method: 'POST' })
+                .then(() => {
+                    if (typeof showToast === 'function') {
+                        showToast('🔄 App is restarting, please wait...', 'info');
+                    }
+                })
+                .catch(() => {});
         }
 
         function autoCheckAndPopupOnLaunch() {

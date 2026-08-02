@@ -7,6 +7,7 @@ import re
 import queue
 import threading
 import subprocess
+import shutil
 import base64
 
 import asyncio
@@ -191,7 +192,86 @@ def check_update():
     return jsonify(result)
 
 
-JOBS = {}
+@app.route("/api/install_update", methods=["POST"])
+def install_update():
+    """Pull latest code from GitHub and apply update in-place using git pull."""
+    import subprocess
+    import sys as _sys
+
+    app_dir = os.path.dirname(os.path.abspath(__file__))
+
+    try:
+        # Find git executable
+        git_cmd = shutil.which("git") or "git"
+
+        result = subprocess.run(
+            [git_cmd, "pull", "origin", GITHUB_BRANCH, "--ff-only"],
+            cwd=app_dir,
+            capture_output=True,
+            text=True,
+            timeout=60
+        )
+
+        stdout = result.stdout.strip()
+        stderr = result.stderr.strip()
+
+        if result.returncode != 0:
+            return jsonify({
+                "status": "error",
+                "message": stderr or stdout or "git pull failed"
+            })
+
+        # Invalidate update cache so next check reflects new version
+        _update_cache["result"] = None
+        _update_cache["expires"] = 0
+
+        already_up_to_date = "Already up to date" in stdout or "Already up-to-date" in stdout
+
+        return jsonify({
+            "status": "ok",
+            "message": stdout or "Update applied successfully.",
+            "already_up_to_date": already_up_to_date
+        })
+
+    except FileNotFoundError:
+        return jsonify({
+            "status": "error",
+            "message": "Git is not installed or not found in PATH. Please install Git and try again."
+        })
+    except subprocess.TimeoutExpired:
+        return jsonify({
+            "status": "error",
+            "message": "Update timed out. Please check your internet connection."
+        })
+    except Exception as e:
+        return jsonify({
+            "status": "error",
+            "message": str(e)
+        })
+
+
+@app.route("/api/restart_app", methods=["POST"])
+def restart_app():
+    """Schedule app restart after a short delay."""
+    import threading as _threading
+    import subprocess
+    import sys as _sys
+
+    def _do_restart():
+        import time as _t
+        _t.sleep(1.2)
+        # Re-launch run_app.py using the same Python interpreter
+        app_dir = os.path.dirname(os.path.abspath(__file__))
+        run_app = os.path.join(app_dir, "run_app.py")
+        if os.path.exists(run_app):
+            subprocess.Popen([_sys.executable, run_app])
+        os._exit(0)
+
+    _threading.Thread(target=_do_restart, daemon=True).start()
+    return jsonify({"status": "ok", "message": "App restarting..."})
+
+
+
 
 
 
