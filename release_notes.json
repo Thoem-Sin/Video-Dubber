@@ -1,4 +1,12 @@
 {
+  "1.2.4": {
+    "date": "2026-08-03",
+    "notes": [
+      "Performance enhancements and build optimization",
+      "Rate-limit free release notes fetching via GitHub Raw",
+      "30-minute session caching and UI responsiveness fixes"
+    ]
+  },
   "1.2.3": {
     "date": "2026-08-02",
     "notes": [
