@@ -154,6 +154,10 @@ namespace VideoDubber.Core
 
             using var basePaint = CreateTextPaint(typeface, fontSize, SKColors.White, cfg);
 
+            // Declare shared variables before if/else so they are in scope for all render presets below
+            string[] lines;
+            float maxLineWidth = 0f;
+
             if (cfg.MaxChars <= 0)
             {
                 // ── UNCONSTRAINED 1-SINGLE-LINE MODE (No max_chars wrapping) ─────────────
@@ -178,7 +182,6 @@ namespace VideoDubber.Core
                 string wrappedText = KhmerSyllableTokenizer.WrapText(text, cfg.MaxChars);
                 lines = wrappedText.Split('\n');
 
-                float maxLineWidth = 0;
                 foreach (var line in lines)
                 {
                     float w = MeasureLine(shaper, line, basePaint);

@@ -1,3 +1,4 @@
+import os
 import whisper
 from PyInstaller.utils.hooks import collect_data_files
 
@@ -13,6 +14,11 @@ added_files = [
     ('gender_detector.py', '.'),
     ('dubbing_engine.py', '.'),
     ('font_manager.py', '.'),
+    ('context_analyzer.py', '.'),
+    ('rvc_cloner.py', '.'),
+    ('version.txt', '.'),
+    ('release_notes.json', '.'),
+    ('bin/cli', 'bin/cli'),
     (whisper_assets, 'whisper/assets'),
 ] + collect_data_files('whisper') + collect_data_files('tiktoken')
 
@@ -23,6 +29,7 @@ a = Analysis(
     datas=added_files,
     hiddenimports=[
         'flask',
+        'flask_cors',
         'edge_tts',
         'deep_translator',
         'whisper',
@@ -48,6 +55,12 @@ a = Analysis(
         'openvoice_cli.utils',
         'librosa',
         'soundfile',
+        'cv2',
+        'PIL',
+        'PIL.Image',
+        'numpy',
+        'requests',
+        'engineio.async_drivers.threading',
     ],
     hookspath=[],
     hooksconfig={},
@@ -71,12 +84,13 @@ exe = EXE(
     bootloader_ignore_signals=False,
     strip=False,
     upx=True,
-    console=True,
+    console=False,
     disable_windowed_traceback=False,
     argv_emulation=False,
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
+    icon=None,
 )
 
 coll = COLLECT(

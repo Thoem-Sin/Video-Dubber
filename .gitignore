@@ -28,3 +28,11 @@ user_config.json
 .idea/
 .DS_Store
 Thumbs.db
+
+# PyInstaller build output — never commit these
+dist/
+build/
+*.zip
+*.spec.bak
+VideoDubberStudio_Windows_*/
+

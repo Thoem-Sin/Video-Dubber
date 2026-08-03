@@ -125,18 +125,19 @@
 
         /* ─── Update Feature Styles ───────────────────────────────────────── */
         .update-check-btn {
-            position: relative;
+            position: relative !important;
+            padding-right: 22px !important;
         }
         .update-badge-dot {
-            position: absolute;
-            top: 6px;
-            right: 6px;
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, #a78bfa, #6366f1);
-            box-shadow: 0 0 6px 2px rgba(139,92,246,0.7);
-            animation: updateBadgePulse 1.8s ease-in-out infinite;
+            position: absolute !important;
+            top: 7px !important;
+            right: 8px !important;
+            width: 7px !important;
+            height: 7px !important;
+            border-radius: 50% !important;
+            background: linear-gradient(135deg, #a78bfa, #6366f1) !important;
+            box-shadow: 0 0 6px 2px rgba(139,92,246,0.7) !important;
+            animation: updateBadgePulse 1.8s ease-in-out infinite !important;
         }
         @keyframes updateBadgePulse {
             0%, 100% { box-shadow: 0 0 6px 2px rgba(139,92,246,0.7); }
@@ -1403,10 +1404,10 @@
                             <input type="file" id="batchFileInput" multiple accept="video/*" style="display:none;"
                                 onchange="handleBatchFileSelect(this)">
                             <input type="hidden" id="batchOutputFolderInput" value="">
-                            <button class="btn btn-secondary" onclick="triggerBatchFilePicker()">
+                            <button class="btn" onclick="triggerBatchFilePicker()">
                                 <i class="fa-solid fa-plus"></i> Add Videos
                             </button>
-                            <button class="btn btn-outline-success" id="selectOutputFolderBtn" onclick="browseBatchOutputFolder()" title="Select output directory where dubbed videos will auto-save">
+                            <button class="btn" id="selectOutputFolderBtn" onclick="browseBatchOutputFolder()" title="Select output directory where dubbed videos will auto-save">
                                 <i class="fa-solid fa-folder-open"></i> <span id="selectOutputFolderBtnText">Output Folder</span>
                             </button>
 
@@ -1419,13 +1420,11 @@
                                 </select>
                             </div>
 
-
-
-                            <button class="btn btn-primary" id="startBatchBtn" onclick="startBatchProcessing()"
+                            <button class="btn" id="startBatchBtn" onclick="startBatchProcessing()"
                                 disabled>
                                 <i class="fa-solid fa-play"></i> Start Batch Queue
                             </button>
-                            <button class="btn btn-danger" onclick="clearBatchQueue()">
+                            <button class="btn btn-clear-queue" onclick="clearBatchQueue()">
                                 <i class="fa-solid fa-trash"></i> Clear Queue
                             </button>
                         </div>
@@ -1921,7 +1920,7 @@
                                     <ul id="selectedVersionNotesList" style="margin: 10px 14px; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 5px; max-height: 110px; overflow-y: auto;"></ul>
                                 </div>
 
-                                <button type="button" class="btn" id="btnSwitchVersion" onclick="performVersionSwitch()" style="width: 100%; height: 40px; background: linear-gradient(135deg, #6366f1, #4f46e5); color: #ffffff; border: none; border-radius: 8px; font-size: 12.5px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 2px 10px rgba(99,102,241,0.35); transition: all 0.2s;">
+                                <button type="button" class="btn" id="btnSwitchVersion" onclick="performVersionSwitch()" style="width: 100%; height: 34px; background: linear-gradient(135deg, #6366f1, #4f46e5); color: #ffffff; border: none; border-radius: 8px; font-size: 12.5px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 2px 10px rgba(99,102,241,0.35); transition: all 0.2s;">
                                     <i class="fa-solid fa-arrow-down-short-wide"></i> Switch / Downgrade Version Now
                                 </button>
                             </div>

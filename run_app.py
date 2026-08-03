@@ -17,9 +17,29 @@ OUTPUT_DIR = os.path.join(BASE_DIR, "outputs")
 class AppAPI:
     """Methods here are callable from JavaScript via window.pywebview.api.*"""
 
+    def _show_dialog(self, dialog_fn, *args, **kwargs):
+        """Helper to manage tkinter dialog lifecycle safely in Windows pywebview desktop app."""
+        import tkinter as tk
+        root = None
+        try:
+            root = tk.Tk()
+            root.withdraw()
+            root.attributes("-topmost", True)
+            res = dialog_fn(*args, **kwargs)
+            return res
+        except Exception as e:
+            print(f"[DialogError] {e}")
+            return None
+        finally:
+            if root:
+                try:
+                    root.quit()
+                    root.destroy()
+                except Exception:
+                    pass
+
     def save_file(self, job_id, file_type):
         """Open a native Save dialog and copy the output file to chosen path."""
-        import tkinter as tk
         from tkinter import filedialog
         import urllib.request
         import json
@@ -65,16 +85,13 @@ class AppAPI:
             return {"ok": False, "error": f"File not found: {src_path}"}
 
         # Show native Save As dialog
-        root = tk.Tk()
-        root.withdraw()
-        root.attributes("-topmost", True)
-        dest = filedialog.asksaveasfilename(
+        dest = self._show_dialog(
+            filedialog.asksaveasfilename,
             title="Save As",
             initialfile=default_name,
             defaultextension=os.path.splitext(default_name)[1],
-            filetypes=filetypes,
+            filetypes=filetypes
         )
-        root.destroy()
 
         if not dest:
             return {"ok": False, "error": "Cancelled"}
@@ -92,27 +109,18 @@ class AppAPI:
 
     def select_batch_files(self):
         """Open native multi-file dialog for selecting multiple videos for batch queue."""
-        import tkinter as tk
         from tkinter import filedialog
-        root = tk.Tk()
-        root.withdraw()
-        root.attributes("-topmost", True)
-        files = filedialog.askopenfilenames(
+        files = self._show_dialog(
+            filedialog.askopenfilenames,
             title="Select Videos for Batch Processing",
             filetypes=[("Video Files", "*.mp4 *.mkv *.mov *.avi *.webm *.flv *.ts")]
         )
-        root.destroy()
         return list(files) if files else []
 
     def select_folder(self):
         """Open native Windows directory picker dialog."""
-        import tkinter as tk
         from tkinter import filedialog
-        root = tk.Tk()
-        root.withdraw()
-        root.attributes("-topmost", True)
-        folder = filedialog.askdirectory(title="Select Output Folder")
-        root.destroy()
+        folder = self._show_dialog(filedialog.askdirectory, title="Select Output Folder")
         return folder if folder else ""
 
     def get_video_duration(self, video_path):
@@ -144,6 +152,9 @@ class AppAPI:
 
 # ─── Start Flask in a background thread ───────────────────────────────────────
 def start_flask():
+    import logging
+    log = logging.getLogger('werkzeug')
+    log.setLevel(logging.ERROR)
     from app import app
     app.run(host="127.0.0.1", port=5000, debug=False, use_reloader=False, threaded=True)
 
