@@ -241,121 +241,259 @@ def check_update():
 
 @app.route("/api/install_update", methods=["POST"])
 def install_update():
-    """Pull latest code from GitHub via git pull if available, or fallback to ZIP download & extract."""
+    """
+    CapCut-style auto-updater.
+    - Frozen EXE mode: downloads the latest GitHub Release ZIP, extracts it to
+      a temp folder, writes an updater.bat that replaces the app after exit, then
+      signals the frontend to restart.  Progress is streamed via SSE so the UI
+      can show a live progress bar.
+    - Dev mode (source): git pull first, ZIP fallback second (original behaviour).
+    """
     import subprocess
     import sys as _sys
     import zipfile
     import tempfile
+    import json as _json
 
+    is_frozen = getattr(_sys, "frozen", False)
     app_dir = os.path.dirname(os.path.abspath(__file__))
 
-    # 1. Locate Git executable (checking PATH + standard Windows install locations)
+    # ── EXE MODE ─────────────────────────────────────────────────────────────
+    if is_frozen:
+        def _generate():
+            def _evt(step, percent=None, msg=None, done=False, error=None):
+                payload = {"step": step}
+                if percent is not None:
+                    payload["percent"] = percent
+                if msg:
+                    payload["msg"] = msg
+                if done:
+                    payload["done"] = True
+                if error:
+                    payload["error"] = error
+                return f"data: {_json.dumps(payload)}\n\n"
+
+            try:
+                # ── Step 1: Resolve download URL from GitHub Releases API ───
+                yield _evt("resolving", 0, "Checking GitHub for latest release…")
+                GH_HEADERS = {"User-Agent": "VideoDubberStudio/1.2",
+                               "Accept": "application/vnd.github+json"}
+                download_url = None
+                try:
+                    api_url = f"https://api.github.com/repos/{GITHUB_REPO}/releases/latest"
+                    req = urllib.request.Request(api_url, headers=GH_HEADERS)
+                    with urllib.request.urlopen(req, timeout=10) as r:
+                        rel = _json.loads(r.read())
+                    # Look for a ZIP asset named VideoDubberStudio_Windows*.zip
+                    for asset in rel.get("assets", []):
+                        if asset.get("name", "").lower().endswith(".zip"):
+                            download_url = asset["browser_download_url"]
+                            break
+                    if not download_url:
+                        # Fallback: branch archive
+                        download_url = f"https://github.com/{GITHUB_REPO}/archive/refs/heads/{GITHUB_BRANCH}.zip"
+                except Exception:
+                    download_url = f"https://github.com/{GITHUB_REPO}/archive/refs/heads/{GITHUB_BRANCH}.zip"
+
+                # ── Step 2: Download ZIP with chunked progress ──────────────
+                yield _evt("downloading", 2, "Connecting to update server…")
+                tmp_zip = os.path.join(tempfile.gettempdir(), "vds_update_download.zip")
+                req = urllib.request.Request(download_url, headers={"User-Agent": "VideoDubberStudio/1.2"})
+                with urllib.request.urlopen(req, timeout=120) as resp:
+                    total = int(resp.headers.get("Content-Length") or 0)
+                    downloaded = 0
+                    chunk_size = 65536  # 64 KB
+                    with open(tmp_zip, "wb") as f:
+                        while True:
+                            chunk = resp.read(chunk_size)
+                            if not chunk:
+                                break
+                            f.write(chunk)
+                            downloaded += len(chunk)
+                            if total > 0:
+                                pct = int(downloaded / total * 70)  # 0–70%
+                                mb = downloaded / 1_048_576
+                                total_mb = total / 1_048_576
+                                yield _evt("downloading", pct,
+                                           f"Downloading… {mb:.1f} / {total_mb:.1f} MB")
+                            else:
+                                mb = downloaded / 1_048_576
+                                yield _evt("downloading", 30, f"Downloading… {mb:.1f} MB received")
+
+                # ── Step 3: Extract to temp folder ──────────────────────────
+                yield _evt("extracting", 72, "Extracting update package…")
+                tmp_extract = os.path.join(tempfile.gettempdir(), "vds_update_extracted")
+                if os.path.exists(tmp_extract):
+                    shutil.rmtree(tmp_extract, ignore_errors=True)
+                os.makedirs(tmp_extract, exist_ok=True)
+                with zipfile.ZipFile(tmp_zip, "r") as zf:
+                    zf.extractall(tmp_extract)
+
+                # Locate the root of the extracted build (may be wrapped in a subdir)
+                extracted_root = tmp_extract
+                entries = os.listdir(tmp_extract)
+                if len(entries) == 1 and os.path.isdir(os.path.join(tmp_extract, entries[0])):
+                    extracted_root = os.path.join(tmp_extract, entries[0])
+
+                # ── Step 4: Write updater.bat ───────────────────────────────
+                yield _evt("preparing", 88, "Preparing updater…")
+                exe_path = _sys.executable          # e.g. C:\...\VideoDubberStudio.exe
+                install_dir = os.path.dirname(exe_path)
+                pid = os.getpid()
+                bat_path = os.path.join(tempfile.gettempdir(), "vds_updater.bat")
+
+                bat_content = f"""@echo off
+setlocal
+:: Wait for the main app process to exit
+:wait_loop
+tasklist /FI "PID eq {pid}" 2>NUL | find /I "{pid}" >NUL 2>&1
+if not errorlevel 1 (
+    timeout /t 1 /nobreak >NUL
+    goto wait_loop
+)
+timeout /t 1 /nobreak >NUL
+
+:: Replace all app files with the new build
+robocopy "{extracted_root}" "{install_dir}" /E /IS /IT /IM /COPYALL /R:2 /W:1 >NUL 2>&1
+
+:: Clean up temp files
+rmdir /S /Q "{tmp_extract}" >NUL 2>&1
+del /F /Q "{tmp_zip}" >NUL 2>&1
+
+:: Launch the updated app
+start "" "{exe_path}"
+del "%~f0"
+"""
+                with open(bat_path, "w", encoding="ascii", errors="replace") as f:
+                    f.write(bat_content)
+
+                # ── Step 5: Launch updater.bat fully detached ───────────────
+                subprocess.Popen(
+                    ["cmd.exe", "/c", bat_path],
+                    creationflags=subprocess.DETACHED_PROCESS | subprocess.CREATE_NEW_PROCESS_GROUP,
+                    close_fds=True,
+                    stdin=subprocess.DEVNULL,
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL,
+                )
+
+                # Invalidate update cache
+                _update_cache["result"] = None
+                _update_cache["expires"] = 0
+
+                yield _evt("done", 100, "Update ready! Restarting…", done=True)
+
+            except Exception as exc:
+                yield _evt("error", msg=str(exc), error=str(exc))
+
+        return Response(
+            _generate(),
+            mimetype="text/event-stream",
+            headers={
+                "Cache-Control": "no-cache",
+                "X-Accel-Buffering": "no",
+            }
+        )
+
+    # ── DEV / SOURCE MODE ────────────────────────────────────────────────────
+    # (original git pull + ZIP fallback — only used when running from source)
+
+    # 1. Try git pull
     git_cmd = shutil.which("git")
     if not git_cmd:
-        candidates = [
+        for candidate in [
             r"C:\Program Files\Git\cmd\git.exe",
             r"C:\Program Files\Git\bin\git.exe",
             r"C:\Program Files (x86)\Git\cmd\git.exe",
             os.path.expanduser(r"~\AppData\Local\Programs\Git\cmd\git.exe"),
-        ]
-        for candidate in candidates:
+        ]:
             if os.path.exists(candidate):
                 git_cmd = candidate
                 break
 
-    # 2. Try git pull if git executable is found
     if git_cmd:
         try:
-            # Restore local version.txt if modified so git pull does not get blocked by dirty working copy
-            subprocess.run([git_cmd, "checkout", "--", "version.txt"], cwd=app_dir, capture_output=True, timeout=10)
-
+            subprocess.run([git_cmd, "checkout", "--", "version.txt"],
+                           cwd=app_dir, capture_output=True, timeout=10)
             result = subprocess.run(
                 [git_cmd, "pull", "origin", GITHUB_BRANCH],
-                cwd=app_dir,
-                capture_output=True,
-                text=True,
-                timeout=60
+                cwd=app_dir, capture_output=True, text=True, timeout=60
             )
-
-            stdout = result.stdout.strip()
-            stderr = result.stderr.strip()
-
             if result.returncode == 0:
                 _update_cache["result"] = None
                 _update_cache["expires"] = 0
-                new_ver = get_app_version()
-                already_up_to_date = "Already up to date" in stdout or "Already up-to-date" in stdout
+                stdout = result.stdout.strip()
+                already = "Already up to date" in stdout or "Already up-to-date" in stdout
                 return jsonify({
                     "status": "ok",
                     "message": stdout or "Update applied successfully.",
-                    "already_up_to_date": already_up_to_date,
-                    "new_version": new_ver
+                    "already_up_to_date": already,
+                    "new_version": get_app_version(),
+                    "action": "restart"
                 })
         except Exception:
-            pass  # Fallback to ZIP download below if git pull encounters issues
+            pass
 
-    # 3. Fallback: Download ZIP directly from GitHub raw branch archive
+    # 2. ZIP fallback
     try:
         zip_url = f"https://github.com/{GITHUB_REPO}/archive/refs/heads/{GITHUB_BRANCH}.zip"
         req = urllib.request.Request(zip_url, headers={"User-Agent": "VideoDubberStudio/1.2"})
-        
         with tempfile.NamedTemporaryFile(delete=False, suffix=".zip") as tmp_file:
             tmp_zip_path = tmp_file.name
-            with urllib.request.urlopen(req, timeout=30) as response:
+            with urllib.request.urlopen(req, timeout=60) as response:
                 tmp_file.write(response.read())
 
-        # Extract zip into temporary directory first
         with tempfile.TemporaryDirectory() as tmp_dir:
-            with zipfile.ZipFile(tmp_zip_path, 'r') as zip_ref:
+            with zipfile.ZipFile(tmp_zip_path, "r") as zip_ref:
                 zip_ref.extractall(tmp_dir)
-
-            # GitHub ZIP wraps files inside "video-dubber-main" folder
-            extracted_folder = os.path.join(tmp_dir, f"video-dubber-{GITHUB_BRANCH}")
-            if not os.path.exists(extracted_folder):
-                # Search for root extracted dir
-                subdirs = [os.path.join(tmp_dir, d) for d in os.listdir(tmp_dir) if os.path.isdir(os.path.join(tmp_dir, d))]
-                if subdirs:
-                    extracted_folder = subdirs[0]
-
+            subdirs = [os.path.join(tmp_dir, d) for d in os.listdir(tmp_dir)
+                       if os.path.isdir(os.path.join(tmp_dir, d))]
+            extracted_folder = subdirs[0] if subdirs else tmp_dir
             if os.path.exists(extracted_folder):
-                # Copy updated files over current app_dir (skip .git directory to preserve local repo metadata)
                 for root, dirs, files in os.walk(extracted_folder):
                     rel_path = os.path.relpath(root, extracted_folder)
-                    target_dir = os.path.join(app_dir, rel_path) if rel_path != "." else app_dir
-                    
                     if ".git" in rel_path.split(os.sep):
                         continue
-                        
+                    target_dir = os.path.join(app_dir, rel_path) if rel_path != "." else app_dir
                     os.makedirs(target_dir, exist_ok=True)
                     for file in files:
-                        src_file = os.path.join(root, file)
-                        dst_file = os.path.join(target_dir, file)
                         try:
-                            shutil.copy2(src_file, dst_file)
+                            shutil.copy2(os.path.join(root, file), os.path.join(target_dir, file))
                         except Exception:
                             pass
-
         try:
             os.remove(tmp_zip_path)
         except Exception:
             pass
-
         _update_cache["result"] = None
         _update_cache["expires"] = 0
-        new_ver = get_app_version()
-
         return jsonify({
             "status": "ok",
-            "message": "Update downloaded and installed successfully via GitHub ZIP archive.",
+            "message": "Update installed via ZIP archive.",
             "already_up_to_date": False,
-            "new_version": new_ver
+            "new_version": get_app_version(),
+            "action": "restart"
         })
-
     except Exception as e:
-        return jsonify({
-            "status": "error",
-            "message": f"Update failed: {str(e)}"
-        })
+        return jsonify({"status": "error", "message": f"Update failed: {str(e)}"})
+
+
+@app.route("/api/restart_app", methods=["POST"])
+def restart_app():
+    """Cleanly exit the process so the detached updater.bat can replace and relaunch the exe."""
+    import threading as _threading
+    import sys as _sys
+
+    def _delayed_exit():
+        import time as _t
+        _t.sleep(1.2)   # Give Flask time to return the response
+        os._exit(0)
+
+    t = _threading.Thread(target=_delayed_exit, daemon=True)
+    t.start()
+    return jsonify({"status": "ok", "message": "App is closing for update…"})
+
+
 
 
 @app.route("/api/version_history", methods=["GET"])
@@ -514,30 +652,6 @@ def switch_version():
             "status": "error",
             "message": f"Failed to switch version: {str(e)}"
         })
-
-
-
-@app.route("/api/restart_app", methods=["POST"])
-def restart_app():
-    """Schedule app restart after a short delay."""
-    import threading as _threading
-    import subprocess
-    import sys as _sys
-
-    def _do_restart():
-        import time as _t
-        _t.sleep(1.2)
-        # Re-launch run_app.py using the same Python interpreter
-        app_dir = os.path.dirname(os.path.abspath(__file__))
-        run_app = os.path.join(app_dir, "run_app.py")
-        if os.path.exists(run_app):
-            subprocess.Popen([_sys.executable, run_app])
-        os._exit(0)
-
-    _threading.Thread(target=_do_restart, daemon=True).start()
-    return jsonify({"status": "ok", "message": "App restarting..."})
-
-
 
 
 

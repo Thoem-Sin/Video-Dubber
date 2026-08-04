@@ -624,19 +624,25 @@
                         <div class="ipd-spinner-ring"></div>
                         <i class="fa-solid fa-cloud-arrow-down ipd-icon"></i>
                     </div>
-                    <h3 class="ipd-title">Downloading Update</h3>
-                    <p class="ipd-sub" id="ipdSubText">Fetching latest code from GitHub<span class="splash-dots"><span>.</span><span>.</span><span>.</span></span></p>
+                    <h3 class="ipd-title" id="ipdProgressTitle">Downloading Update</h3>
+                    <p class="ipd-sub" id="ipdSubText">Connecting to update server<span class="splash-dots"><span>.</span><span>.</span><span>.</span></span></p>
+                    <!-- Progress bar -->
+                    <div style="margin: 14px 0 4px; background: rgba(255,255,255,0.07); border-radius: 99px; height: 6px; overflow: hidden; width: 100%;">
+                        <div id="ipdProgressBar" style="height:100%; width:0%; background: linear-gradient(90deg,#6366f1,#06b6d4); border-radius:99px; transition: width 0.4s ease;"></div>
+                    </div>
+                    <p id="ipdProgressPct" style="font-size:11px; color:#64748b; text-align:right; margin:4px 0 0;">0%</p>
                 </div>
-                <!-- Success state -->
+                <!-- Success / restart state -->
                 <div id="ipdStateSuccess" class="hidden">
                     <div class="ipd-icon-wrap success">
                         <i class="fa-solid fa-circle-check ipd-icon"></i>
                     </div>
-                    <h3 class="ipd-title" id="ipdSuccessTitle">Update Installed!</h3>
-                    <p class="ipd-sub">Restart the app to apply the new version.</p>
+                    <h3 class="ipd-title" id="ipdSuccessTitle">Update Ready!</h3>
+                    <p class="ipd-sub">Restarting in <strong id="ipdCountdown">3</strong>s…</p>
                     <div class="ipd-actions">
-                        <button type="button" class="ipd-btn ipd-btn-later" onclick="closeIpd()">Later</button>
-                        <button type="button" class="ipd-btn ipd-btn-restart" id="ipdRestartBtn" onclick="restartApp()"><i class="fa-solid fa-rotate-right"></i> Restart Now</button>
+                        <button type="button" class="ipd-btn ipd-btn-restart" id="ipdRestartBtn" onclick="restartApp()">
+                            <i class="fa-solid fa-rotate-right"></i> Restart Now
+                        </button>
                     </div>
                 </div>
                 <!-- Error state -->
@@ -652,6 +658,7 @@
                 </div>
             </div>
         </div>
+
 
         <!-- ─── Switch / Downgrade Version Confirmation Modal ────────── -->
         <div class="ipd-backdrop hidden" id="switchConfirmBackdrop" style="z-index: 10001;">
@@ -1925,17 +1932,7 @@
                                 </button>
                             </div>
 
-                            <!-- Complete Release Notes History -->
-                            <div style="margin-top: 18px;">
-                                <h5 style="margin: 0 0 12px 0; font-size: 13px; font-weight: 700; color: #e2e8f0; display: flex; align-items: center; gap: 6px;">
-                                    <i class="fa-solid fa-clock-rotate-left" style="color: #10b981;"></i> Complete Version Release History
-                                </h5>
-                                <div id="fullReleaseHistoryList" style="max-height: 230px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; padding-right: 4px;">
-                                    <div style="color: #64748b; font-size: 12px; text-align: center; padding: 20px 0;">
-                                        <i class="fa-solid fa-spinner fa-spin" style="margin-right: 6px;"></i> Loading release history...
-                                    </div>
-                                </div>
-                            </div>
+
                         </div>
                     </div>
 
@@ -2130,36 +2127,44 @@
             document.getElementById('ipdStateSuccess').classList.add('hidden');
             document.getElementById('ipdStateError').classList.add('hidden');
             document.getElementById('ipdBackdrop').classList.remove('hidden');
+            // Reset progress bar
+            const bar = document.getElementById('ipdProgressBar');
+            const pct = document.getElementById('ipdProgressPct');
+            if (bar) bar.style.width = '0%';
+            if (pct) pct.textContent = '0%';
         }
         function closeIpd() {
             document.getElementById('ipdBackdrop').classList.add('hidden');
         }
-        function ipdShowSuccess(alreadyUpToDate, newVer) {
+        function _ipdSetProgress(percent, label) {
+            const bar = document.getElementById('ipdProgressBar');
+            const pct = document.getElementById('ipdProgressPct');
+            const sub = document.getElementById('ipdSubText');
+            const title = document.getElementById('ipdProgressTitle');
+            if (bar) bar.style.width = Math.min(100, percent) + '%';
+            if (pct) pct.textContent = Math.min(100, percent) + '%';
+            if (label && sub) sub.innerHTML = label;
+            if (title) {
+                if (percent < 72) title.textContent = 'Downloading Update';
+                else if (percent < 90) title.textContent = 'Extracting Update';
+                else title.textContent = 'Preparing Restart';
+            }
+        }
+        function ipdShowSuccess() {
             document.getElementById('ipdStateProcessing').classList.add('hidden');
             document.getElementById('ipdStateError').classList.add('hidden');
-            document.getElementById('ipdSuccessTitle').textContent = alreadyUpToDate ? 'Already Up to Date' : 'Update Installed!';
             document.getElementById('ipdStateSuccess').classList.remove('hidden');
-
-            if (newVer) {
-                if (document.getElementById('uiCurrentVer')) {
-                    document.getElementById('uiCurrentVer').textContent = 'v' + newVer;
+            // Auto-countdown then restart
+            let secs = 3;
+            const cdEl = document.getElementById('ipdCountdown');
+            const timer = setInterval(() => {
+                secs--;
+                if (cdEl) cdEl.textContent = secs;
+                if (secs <= 0) {
+                    clearInterval(timer);
+                    restartApp();
                 }
-                if (document.getElementById('uiLatestVer')) {
-                    document.getElementById('uiLatestVer').textContent = 'v' + newVer;
-                }
-                if (document.getElementById('uiLatestChip')) {
-                    document.getElementById('uiLatestChip').classList.remove('highlight');
-                }
-                if (document.getElementById('updateBadgeDot')) {
-                    document.getElementById('updateBadgeDot').style.display = 'none';
-                }
-                if (document.getElementById('updateModalTitle')) {
-                    document.getElementById('updateModalTitle').textContent = 'Software Up to Date';
-                }
-                if (document.getElementById('uiDownloadBtn')) {
-                    document.getElementById('uiDownloadBtn').classList.add('hidden');
-                }
-            }
+            }, 1000);
         }
         function ipdShowError(msg) {
             document.getElementById('ipdStateProcessing').classList.add('hidden');
@@ -2168,40 +2173,75 @@
             document.getElementById('ipdStateError').classList.remove('hidden');
         }
 
-        /* ─── In-App Auto Installer ────────────────────────────────────── */
+        /* ─── In-App Auto Installer (SSE streaming) ────────────────────── */
         function installUpdate() {
-            // Close the update modal and open the progress dialog
             document.getElementById('updateModalBackdrop').classList.add('hidden');
             openIpd();
 
+            // Use EventSource (SSE) to receive live progress from the backend
+            // We POST first to trigger the update, then listen via a GET SSE stream.
+            // Since EventSource only supports GET, we use fetch with ReadableStream instead.
             fetch('/api/install_update', { method: 'POST' })
-                .then(r => r.json())
-                .then(res => {
-                    if (res.status === 'ok') {
-                        ipdShowSuccess(res.already_up_to_date, res.new_version);
+                .then(response => {
+                    const contentType = response.headers.get('content-type') || '';
+                    if (contentType.includes('text/event-stream')) {
+                        // SSE streaming response (exe mode)
+                        const reader = response.body.getReader();
+                        const decoder = new TextDecoder();
+                        let buffer = '';
+                        function read() {
+                            reader.read().then(({ done, value }) => {
+                                if (done) return;
+                                buffer += decoder.decode(value, { stream: true });
+                                const lines = buffer.split('\n');
+                                buffer = lines.pop(); // keep incomplete line
+                                for (const line of lines) {
+                                    if (line.startsWith('data: ')) {
+                                        try {
+                                            const evt = JSON.parse(line.slice(6));
+                                            if (evt.error) {
+                                                ipdShowError(evt.msg || evt.error);
+                                                return;
+                                            }
+                                            if (evt.done) {
+                                                _ipdSetProgress(100, 'Update ready! Restarting…');
+                                                setTimeout(ipdShowSuccess, 400);
+                                                return;
+                                            }
+                                            if (evt.percent !== undefined) {
+                                                _ipdSetProgress(evt.percent, evt.msg || '');
+                                            }
+                                        } catch (e) {}
+                                    }
+                                }
+                                read(); // continue reading
+                            }).catch(() => ipdShowError('Connection lost during download.'));
+                        }
+                        read();
                     } else {
-                        ipdShowError(res.message || 'Update failed.');
+                        // JSON response (dev/source mode)
+                        return response.json().then(res => {
+                            if (res.status === 'ok') {
+                                _ipdSetProgress(100, 'Update installed!');
+                                setTimeout(ipdShowSuccess, 300);
+                            } else {
+                                ipdShowError(res.message || 'Update failed.');
+                            }
+                        });
                     }
                 })
-                .catch(() => {
-                    ipdShowError('Network error. Please check your internet connection.');
-                });
+                .catch(() => ipdShowError('Network error. Please check your internet connection.'));
         }
 
         function restartApp() {
             const btn = document.getElementById('ipdRestartBtn');
             if (btn) {
                 btn.disabled = true;
-                btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Restarting...';
+                btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Restarting…';
             }
-            fetch('/api/restart_app', { method: 'POST' })
-                .then(() => {
-                    if (typeof showToast === 'function') {
-                        showToast('🔄 App is restarting, please wait...', 'info');
-                    }
-                })
-                .catch(() => {});
+            fetch('/api/restart_app', { method: 'POST' }).catch(() => {});
         }
+
 
         let _versionHistoryCache = [];
 
@@ -2239,29 +2279,7 @@
                             onDowngradeVersionChange(selectEl.value);
                         }
 
-                        // Render Complete Version Release History list
-                        if (historyList) {
-                            historyList.innerHTML = versions.map(v => {
-                                const isCurrent = v.version === data.current_version;
-                                const lines = (v.notes || '').split('\n').filter(l => l.trim());
-                                const notesHtml = lines.map(l => {
-                                    const text = l.replace(/^[-•]\s*/, '');
-                                    return `<li style="display:flex;align-items:flex-start;gap:7px;font-size:11.5px;color:#94a3b8;line-height:1.5;">
-                                        <i class="fa-solid fa-circle-check" style="color:#10b981;font-size:9px;margin-top:3px;flex-shrink:0;"></i>${text}</li>`;
-                                }).join('');
-                                return `
-                                    <div style="background: rgba(15, 23, 42, 0.7); border: 1px solid rgba(255,255,255,0.07); border-radius: 10px; padding: 12px 14px;">
-                                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                                            <span style="font-size: 13px; font-weight: 700; color: #fff; display: flex; align-items: center; gap: 6px;">
-                                                <i class="fa-solid fa-tag" style="color: #6366f1; font-size: 11px;"></i> v${v.version}
-                                            </span>
-                                            ${isCurrent ? '<span style="background: rgba(16, 185, 129, 0.2); color: #34d399; font-size: 10.5px; font-weight: 700; padding: 2px 8px; border-radius: 10px; border: 1px solid rgba(16,185,129,0.3);">&#10003; Current</span>' : ''}
-                                        </div>
-                                        <ul style="margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:4px;">${notesHtml}</ul>
-                                    </div>
-                                `;
-                            }).join('');
-                        }
+
                     }
                 })
                 .catch(() => {

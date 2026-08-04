@@ -1,4 +1,12 @@
 {
+  "1.2.5": {
+    "date": "2026-08-04",
+    "notes": [
+      "CapCut-style auto-updater with live download progress bar",
+      "App self-updates and restarts automatically — no reinstall needed",
+      "Fixed startup crash caused by duplicate restart route"
+    ]
+  },
   "1.2.4": {
     "date": "2026-08-03",
     "notes": [
