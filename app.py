@@ -351,17 +351,27 @@ if not errorlevel 1 (
     timeout /t 1 /nobreak >NUL
     goto wait_loop
 )
-timeout /t 1 /nobreak >NUL
+timeout /t 2 /nobreak >NUL
 
-:: Replace all app files with the new build
-robocopy "{extracted_root}" "{install_dir}" /E /IS /IT /IM /COPYALL /R:2 /W:1 >NUL 2>&1
+:: Rename old exe so it can be cleanly replaced (Windows may keep it locked briefly)
+if exist "{exe_path}" (
+    ren "{exe_path}" "_old_VideoDubberStudio.exe" >NUL 2>&1
+)
+
+:: Copy all new app files from extracted update folder
+robocopy "{extracted_root}" "{install_dir}" /E /IS /IT /IM /COPYALL /R:3 /W:2 >NUL 2>&1
+
+:: Delete the renamed old exe
+del /F /Q "{install_dir}\\_old_VideoDubberStudio.exe" >NUL 2>&1
 
 :: Clean up temp files
 rmdir /S /Q "{tmp_extract}" >NUL 2>&1
 del /F /Q "{tmp_zip}" >NUL 2>&1
 
-:: Launch the updated app
+:: Launch the new updated app
 start "" "{exe_path}"
+
+:: Self-delete this updater script
 del "%~f0"
 """
                 with open(bat_path, "w", encoding="ascii", errors="replace") as f:

@@ -1,4 +1,11 @@
 {
+  "1.2.7": {
+    "date": "2026-08-04",
+    "notes": [
+      "Updater now explicitly deletes old exe before installing new version",
+      "New exe launches automatically after update completes"
+    ]
+  },
   "1.2.6": {
     "date": "2026-08-04",
     "notes": [
