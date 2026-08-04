@@ -480,13 +480,23 @@ del "%~f0"
 
 @app.route("/api/restart_app", methods=["POST"])
 def restart_app():
-    """Cleanly exit the process so the detached updater.bat can replace and relaunch the exe."""
+    """Exit the process for update. In exe mode, updater.bat relaunches. In dev mode, relaunch run_app.py."""
     import threading as _threading
     import sys as _sys
+    import subprocess as _subprocess
+
+    is_frozen = getattr(_sys, "frozen", False)
 
     def _delayed_exit():
         import time as _t
         _t.sleep(1.2)   # Give Flask time to return the response
+        if not is_frozen:
+            # Dev/source mode: relaunch run_app.py with the same Python interpreter
+            app_dir = os.path.dirname(os.path.abspath(__file__))
+            run_app = os.path.join(app_dir, "run_app.py")
+            if os.path.exists(run_app):
+                _subprocess.Popen([_sys.executable, run_app])
+        # In exe mode, updater.bat (already launched) will relaunch the new exe
         os._exit(0)
 
     t = _threading.Thread(target=_delayed_exit, daemon=True)

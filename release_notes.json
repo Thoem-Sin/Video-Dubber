@@ -1,4 +1,11 @@
 {
+  "1.2.6": {
+    "date": "2026-08-04",
+    "notes": [
+      "Fixed auto-restart not reopening app after update",
+      "Dev mode now relaunches run_app.py automatically on update"
+    ]
+  },
   "1.2.5": {
     "date": "2026-08-04",
     "notes": [
